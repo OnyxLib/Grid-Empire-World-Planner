@@ -11,7 +11,8 @@ This repository was made to make accessing the application easier and more trans
 <br/>
 Disclaimer: AI was used in the making of this application. 
 <br/>
-
+<br/>
+If you do not want to run this program in your machine, please look into sanboxes/virtual machines. I recommend this from [Windows](https://learn.microsoft.com/en-us/windows/security/application-security/application-isolation/windows-sandbox/).
 ## Installation & Usage
 1. Go to the [Releases](https://github.com/OnyxLib/Grid-Empire-World-Planner/releases) and download the latest version of the "GE_WorldPlanner_Package.zip".
 2. Unzip "GE_WorldPlanner_Package.zip".
@@ -22,4 +23,5 @@ Disclaimer: AI was used in the making of this application.
 - [ ] Add all the tiles and backgrounds when the redesign is complete
 - [ ] Implement autotiling 
 - [ ] Add another layer for water logged blocks
-- [ ] Add shadows 
+- [ ] Add shadows
+- [ ] Make a website to run this world planner
