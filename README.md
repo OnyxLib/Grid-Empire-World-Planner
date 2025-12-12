@@ -13,13 +13,13 @@ Disclaimer: AI was used in the making of this application.
 <br/>
 
 ## Installation & Usage
-1. Go to the [Releases](https://github.com/OnyxLib/Grid-Empire-World-Planner/releases) and download the latest version of the "GE_WorldPlanner.exe", "tiles.zip", and "backgrounds.zip".
-2. Unzip "tiles.zip" and "backgrounds.zip".
-3. Make sure all three files are in the same directory/folder and run "GE_WorldPlanner.exe".
+1. Go to the [Releases](https://github.com/OnyxLib/Grid-Empire-World-Planner/releases) and download the latest version of the "GE_WorldPlanner_Package.zip".
+2. Unzip "GE_WorldPlanner_Package.zip".
+3. Open the folder and run "GE_WorldPlanner.exe". Make sure that the tiles and backgrounds folder are in the same directory/folder for it to load into the application.
 4. (optional) You can upload custom tiles and backgrounds into the program by adding it to the tiles and backgrounds folder. 
 
 ## Future Plans
 - [ ] Add all the tiles and backgrounds when the redesign is complete
 - [ ] Implement autotiling 
-- [ ] Add another layer for water blocks
+- [ ] Add another layer for water logged blocks
 - [ ] Add shadows 
