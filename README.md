@@ -3,7 +3,7 @@
 :bangbang: **[WIP]** :bangbang: 
 <br/>
 <br/>
-This application is a personal project independent from the main game **Grid Empire**! 
+The Grid Empire World Planner is a personal project independent from the main game **Grid Empire**! 
 <br/>
 <br/>
 This repository was made to make accessing the application easier and more transparent. Because this a personal project, updates & merging pull reuqests will come whenever I am available. Feel free to contribute to the code or add to the tile/background list (dm me in the GE discord).
@@ -18,6 +18,19 @@ If you do not want to run this program in your machine, please look into sandbox
 2. Unzip "GE_WorldPlanner_Package.zip".
 3. Open the folder and run "GE_WorldPlanner.exe". Make sure that the tiles and backgrounds folder are in the same directory/folder for it to load into the application.
 4. (optional) You can upload custom tiles and backgrounds into the program by adding it to the tiles and backgrounds folder. 
+
+## Features
+- 100x60 Tile map with most of the tiles in the game
+- Add and remove tiles and backgrounds
+- search for tiles
+- 1x1, 3x3, 5x5 brush sizes
+- fill tool
+- toggle grid
+- toggle layer
+- clear map
+- select tile from tile map
+- Exportable map render, map file, list of blocks
+- Import map file
 
 ## Future Plans
 - [ ] Add all the tiles and backgrounds when the redesign is complete
