@@ -5,7 +5,7 @@ import numpy as np
 import os
 import pickle
 import sys
-from ctypes import windll
+#from ctypes import windll
 
 # Set a higher recursion limit for deep drawing/export calls
 sys.setrecursionlimit(2000)
@@ -1251,10 +1251,11 @@ class TileBuilderApp:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    windll.shcore.SetProcessDpiAwareness(1)
+    #windll.shcore.SetProcessDpiAwareness(1)
     app = TileBuilderApp(root)
     root.geometry("1200x800")
     root.minsize(800, 600)
     root.state("zoomed")
     root.config(bg=TileBuilderApp.C_BG_MAIN)
+
     root.mainloop()
