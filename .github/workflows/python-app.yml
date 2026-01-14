@@ -15,7 +15,6 @@ jobs:
   
     runs-on: ubuntu-latest
     env:
-      DISPLAY: ":99.0"
       QT_SELECT: "qt6"
 
     steps:
@@ -43,6 +42,5 @@ jobs:
 
     - name: Run python application
       run: |
-          # export DISPLAY=:99
           # Xvfb :99 &
           python GEWP_main.py
