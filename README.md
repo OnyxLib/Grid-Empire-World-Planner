@@ -30,8 +30,8 @@ Disclaimer: AI was used in the making of this application.
 - search, rotate, mirror tiles
 - 1x1 to 5x5 brush sizes
 - fill tool
-- toggle grid
-- toggle layer
+- toggle grid and layers
+- undo, redo
 - clear map
 - select tile from tile map
 - Exportable map render, map file, list of blocks
