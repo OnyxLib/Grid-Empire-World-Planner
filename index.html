@@ -262,11 +262,8 @@
         let isInfoVisible = false; // Renamed from showInfo to avoid collision with function name
         const imgCache = {};
 
-        //import tiles
-        loadSpritesheet();
-
-        //add bedrock
-        addBedrockLayers();
+        //import tiles, add beckrock after it finishes
+        loadSpritesheet().then(data => addBedrockLayers());
 
         // Setup Background Image
         let bgImage = new Image();
@@ -321,13 +318,14 @@
                     const dataUrl = tempCanvas.toDataURL();
                     const img = document.createElement('img');
                     img.src = dataUrl;
-                    img.title = name.replace(".png", "").replace(".jpg", "");
+                    img.title = name;
                     img.onclick = () => selectTile(img.src, img);
                     palette.appendChild(img);
                 });
 
                 console.log(`Successfully imported ${frames.length} tiles.`);
                 draw();
+                return data;
             } catch (err) {
                 console.error("Failed to load spritesheet:", err);
             }
@@ -707,5 +705,3 @@
 </body>
 
 </html>
-
-
