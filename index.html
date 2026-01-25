@@ -321,7 +321,7 @@
                     const dataUrl = tempCanvas.toDataURL();
                     const img = document.createElement('img');
                     img.src = dataUrl;
-                    img.title = name;
+                    img.title = name.replace(".png", "").replace(".jpg", "");
                     img.onclick = () => selectTile(dataUrl, img);
                     palette.appendChild(img);
                 });
@@ -707,3 +707,4 @@
 </body>
 
 </html>
+
