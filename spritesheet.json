@@ -1,0 +1,1950 @@
+{
+    "meta": {
+        "image": "spritesheet.png",
+        "size": {
+            "w": 1840,
+            "h": 4048
+        },
+        "tile_size": {
+            "w": 184,
+            "h": 184
+        }
+    },
+    "frames": {
+        "Achievement Block.png": {
+            "frame": {
+                "x": 0,
+                "y": 0,
+                "w": 184,
+                "h": 184
+            },
+            "index": 0
+        },
+        "Acid.png": {
+            "frame": {
+                "x": 184,
+                "y": 0,
+                "w": 184,
+                "h": 184
+            },
+            "index": 1
+        },
+        "Air Conditioner.png": {
+            "frame": {
+                "x": 368,
+                "y": 0,
+                "w": 184,
+                "h": 184
+            },
+            "index": 2
+        },
+        "Area Lock.png": {
+            "frame": {
+                "x": 552,
+                "y": 0,
+                "w": 184,
+                "h": 184
+            },
+            "index": 3
+        },
+        "Arrow Sign.png": {
+            "frame": {
+                "x": 736,
+                "y": 0,
+                "w": 184,
+                "h": 184
+            },
+            "index": 4
+        },
+        "Barn Block.png": {
+            "frame": {
+                "x": 920,
+                "y": 0,
+                "w": 184,
+                "h": 184
+            },
+            "index": 5
+        },
+        "Barrel.png": {
+            "frame": {
+                "x": 1104,
+                "y": 0,
+                "w": 184,
+                "h": 184
+            },
+            "index": 6
+        },
+        "Bathroom Tile.png": {
+            "frame": {
+                "x": 1288,
+                "y": 0,
+                "w": 184,
+                "h": 184
+            },
+            "index": 7
+        },
+        "Bathroom Wall.png": {
+            "frame": {
+                "x": 1472,
+                "y": 0,
+                "w": 184,
+                "h": 184
+            },
+            "index": 8
+        },
+        "Bathtub.png": {
+            "frame": {
+                "x": 1656,
+                "y": 0,
+                "w": 184,
+                "h": 184
+            },
+            "index": 9
+        },
+        "Bedrock.png": {
+            "frame": {
+                "x": 0,
+                "y": 184,
+                "w": 184,
+                "h": 184
+            },
+            "index": 10
+        },
+        "Black Block.png": {
+            "frame": {
+                "x": 184,
+                "y": 184,
+                "w": 184,
+                "h": 184
+            },
+            "index": 11
+        },
+        "Black Dotted Wall.png": {
+            "frame": {
+                "x": 368,
+                "y": 184,
+                "w": 184,
+                "h": 184
+            },
+            "index": 12
+        },
+        "Black Steel Block.png": {
+            "frame": {
+                "x": 552,
+                "y": 184,
+                "w": 184,
+                "h": 184
+            },
+            "index": 13
+        },
+        "Blue Background.png": {
+            "frame": {
+                "x": 736,
+                "y": 184,
+                "w": 184,
+                "h": 184
+            },
+            "index": 14
+        },
+        "Blue Block.png": {
+            "frame": {
+                "x": 920,
+                "y": 184,
+                "w": 184,
+                "h": 184
+            },
+            "index": 15
+        },
+        "Blue Door.png": {
+            "frame": {
+                "x": 1104,
+                "y": 184,
+                "w": 184,
+                "h": 184
+            },
+            "index": 16
+        },
+        "Blue Light Block.png": {
+            "frame": {
+                "x": 1288,
+                "y": 184,
+                "w": 184,
+                "h": 184
+            },
+            "index": 17
+        },
+        "Blue Rock Background.png": {
+            "frame": {
+                "x": 1472,
+                "y": 184,
+                "w": 184,
+                "h": 184
+            },
+            "index": 18
+        },
+        "Blue Striped Wallpaper.png": {
+            "frame": {
+                "x": 1656,
+                "y": 184,
+                "w": 184,
+                "h": 184
+            },
+            "index": 19
+        },
+        "Brick Wall.png": {
+            "frame": {
+                "x": 0,
+                "y": 368,
+                "w": 184,
+                "h": 184
+            },
+            "index": 20
+        },
+        "Brown Block.png": {
+            "frame": {
+                "x": 184,
+                "y": 368,
+                "w": 184,
+                "h": 184
+            },
+            "index": 21
+        },
+        "Bush.png": {
+            "frame": {
+                "x": 368,
+                "y": 368,
+                "w": 184,
+                "h": 184
+            },
+            "index": 22
+        },
+        "Cactus Pot.png": {
+            "frame": {
+                "x": 552,
+                "y": 368,
+                "w": 184,
+                "h": 184
+            },
+            "index": 23
+        },
+        "Cactus.png": {
+            "frame": {
+                "x": 736,
+                "y": 368,
+                "w": 184,
+                "h": 184
+            },
+            "index": 24
+        },
+        "Carved Pumpkin Block.png": {
+            "frame": {
+                "x": 920,
+                "y": 368,
+                "w": 184,
+                "h": 184
+            },
+            "index": 25
+        },
+        "Carved Sandstone.png": {
+            "frame": {
+                "x": 1104,
+                "y": 368,
+                "w": 184,
+                "h": 184
+            },
+            "index": 26
+        },
+        "Castle Ground.png": {
+            "frame": {
+                "x": 1288,
+                "y": 368,
+                "w": 184,
+                "h": 184
+            },
+            "index": 27
+        },
+        "Castle Wall.png": {
+            "frame": {
+                "x": 1472,
+                "y": 368,
+                "w": 184,
+                "h": 184
+            },
+            "index": 28
+        },
+        "Chandelier.png": {
+            "frame": {
+                "x": 1656,
+                "y": 368,
+                "w": 184,
+                "h": 184
+            },
+            "index": 29
+        },
+        "Checkpoint Flag.png": {
+            "frame": {
+                "x": 0,
+                "y": 552,
+                "w": 184,
+                "h": 184
+            },
+            "index": 30
+        },
+        "Chest Block.png": {
+            "frame": {
+                "x": 184,
+                "y": 552,
+                "w": 184,
+                "h": 184
+            },
+            "index": 31
+        },
+        "Clay Pot,.png": {
+            "frame": {
+                "x": 368,
+                "y": 552,
+                "w": 184,
+                "h": 184
+            },
+            "index": 32
+        },
+        "Cloud Block.png": {
+            "frame": {
+                "x": 552,
+                "y": 552,
+                "w": 184,
+                "h": 184
+            },
+            "index": 33
+        },
+        "Coal Block.png": {
+            "frame": {
+                "x": 736,
+                "y": 552,
+                "w": 184,
+                "h": 184
+            },
+            "index": 34
+        },
+        "Computer Block.png": {
+            "frame": {
+                "x": 920,
+                "y": 552,
+                "w": 184,
+                "h": 184
+            },
+            "index": 35
+        },
+        "Crafting Table.png": {
+            "frame": {
+                "x": 1104,
+                "y": 552,
+                "w": 184,
+                "h": 184
+            },
+            "index": 36
+        },
+        "Crystal Spikes.png": {
+            "frame": {
+                "x": 1288,
+                "y": 552,
+                "w": 184,
+                "h": 184
+            },
+            "index": 37
+        },
+        "Cyan Block.png": {
+            "frame": {
+                "x": 1472,
+                "y": 552,
+                "w": 184,
+                "h": 184
+            },
+            "index": 38
+        },
+        "Daisy.png": {
+            "frame": {
+                "x": 1656,
+                "y": 552,
+                "w": 184,
+                "h": 184
+            },
+            "index": 39
+        },
+        "Damaged Sandstone.png": {
+            "frame": {
+                "x": 0,
+                "y": 736,
+                "w": 184,
+                "h": 184
+            },
+            "index": 40
+        },
+        "Danger Block.png": {
+            "frame": {
+                "x": 184,
+                "y": 736,
+                "w": 184,
+                "h": 184
+            },
+            "index": 41
+        },
+        "Dark Blue Background.png": {
+            "frame": {
+                "x": 368,
+                "y": 736,
+                "w": 184,
+                "h": 184
+            },
+            "index": 42
+        },
+        "Dark Blue Block.png": {
+            "frame": {
+                "x": 552,
+                "y": 736,
+                "w": 184,
+                "h": 184
+            },
+            "index": 43
+        },
+        "Dark Green Background.png": {
+            "frame": {
+                "x": 736,
+                "y": 736,
+                "w": 184,
+                "h": 184
+            },
+            "index": 44
+        },
+        "Dark Green Block.png": {
+            "frame": {
+                "x": 920,
+                "y": 736,
+                "w": 184,
+                "h": 184
+            },
+            "index": 45
+        },
+        "Dark Orange Background.png": {
+            "frame": {
+                "x": 1104,
+                "y": 736,
+                "w": 184,
+                "h": 184
+            },
+            "index": 46
+        },
+        "Dark Orange Block.png": {
+            "frame": {
+                "x": 1288,
+                "y": 736,
+                "w": 184,
+                "h": 184
+            },
+            "index": 47
+        },
+        "Dark Purple Background.png": {
+            "frame": {
+                "x": 1472,
+                "y": 736,
+                "w": 184,
+                "h": 184
+            },
+            "index": 48
+        },
+        "Dark Purple Block.png": {
+            "frame": {
+                "x": 1656,
+                "y": 736,
+                "w": 184,
+                "h": 184
+            },
+            "index": 49
+        },
+        "Dark Red Background.png": {
+            "frame": {
+                "x": 0,
+                "y": 920,
+                "w": 184,
+                "h": 184
+            },
+            "index": 50
+        },
+        "Dark Red Block.png": {
+            "frame": {
+                "x": 184,
+                "y": 920,
+                "w": 184,
+                "h": 184
+            },
+            "index": 51
+        },
+        "Dark Yellow Background.png": {
+            "frame": {
+                "x": 368,
+                "y": 920,
+                "w": 184,
+                "h": 184
+            },
+            "index": 52
+        },
+        "Dark Yellow Block.png": {
+            "frame": {
+                "x": 552,
+                "y": 920,
+                "w": 184,
+                "h": 184
+            },
+            "index": 53
+        },
+        "Darkness.png": {
+            "frame": {
+                "x": 736,
+                "y": 920,
+                "w": 184,
+                "h": 184
+            },
+            "index": 54
+        },
+        "Death Sign.png": {
+            "frame": {
+                "x": 920,
+                "y": 920,
+                "w": 184,
+                "h": 184
+            },
+            "index": 55
+        },
+        "Desert Snake.png": {
+            "frame": {
+                "x": 1104,
+                "y": 920,
+                "w": 184,
+                "h": 184
+            },
+            "index": 56
+        },
+        "Diamond-Pattern Wallpaper..png": {
+            "frame": {
+                "x": 1288,
+                "y": 920,
+                "w": 184,
+                "h": 184
+            },
+            "index": 57
+        },
+        "Dirt Background.png": {
+            "frame": {
+                "x": 1472,
+                "y": 920,
+                "w": 184,
+                "h": 184
+            },
+            "index": 58
+        },
+        "Dirt.png": {
+            "frame": {
+                "x": 1656,
+                "y": 920,
+                "w": 184,
+                "h": 184
+            },
+            "index": 59
+        },
+        "Disco Ball.png": {
+            "frame": {
+                "x": 0,
+                "y": 1104,
+                "w": 184,
+                "h": 184
+            },
+            "index": 60
+        },
+        "Display Block.png": {
+            "frame": {
+                "x": 184,
+                "y": 1104,
+                "w": 184,
+                "h": 184
+            },
+            "index": 61
+        },
+        "Dotted Background.png": {
+            "frame": {
+                "x": 368,
+                "y": 1104,
+                "w": 184,
+                "h": 184
+            },
+            "index": 62
+        },
+        "Dotted Block.png": {
+            "frame": {
+                "x": 552,
+                "y": 1104,
+                "w": 184,
+                "h": 184
+            },
+            "index": 63
+        },
+        "Duck.png": {
+            "frame": {
+                "x": 736,
+                "y": 1104,
+                "w": 184,
+                "h": 184
+            },
+            "index": 64
+        },
+        "Dungeon Background.png": {
+            "frame": {
+                "x": 920,
+                "y": 1104,
+                "w": 184,
+                "h": 184
+            },
+            "index": 65
+        },
+        "Dungeon Door.png": {
+            "frame": {
+                "x": 1104,
+                "y": 1104,
+                "w": 184,
+                "h": 184
+            },
+            "index": 66
+        },
+        "Entrance Door.png": {
+            "frame": {
+                "x": 1288,
+                "y": 1104,
+                "w": 184,
+                "h": 184
+            },
+            "index": 67
+        },
+        "Exclamation Mark Sign.png": {
+            "frame": {
+                "x": 1472,
+                "y": 1104,
+                "w": 184,
+                "h": 184
+            },
+            "index": 68
+        },
+        "Fishbowl.png": {
+            "frame": {
+                "x": 1656,
+                "y": 1104,
+                "w": 184,
+                "h": 184
+            },
+            "index": 69
+        },
+        "Flower Pot,.png": {
+            "frame": {
+                "x": 0,
+                "y": 1288,
+                "w": 184,
+                "h": 184
+            },
+            "index": 70
+        },
+        "Flowerfield.png": {
+            "frame": {
+                "x": 184,
+                "y": 1288,
+                "w": 184,
+                "h": 184
+            },
+            "index": 71
+        },
+        "Fountain.png": {
+            "frame": {
+                "x": 368,
+                "y": 1288,
+                "w": 184,
+                "h": 184
+            },
+            "index": 72
+        },
+        "Glass Background.png": {
+            "frame": {
+                "x": 552,
+                "y": 1288,
+                "w": 184,
+                "h": 184
+            },
+            "index": 73
+        },
+        "Glass Block.png": {
+            "frame": {
+                "x": 736,
+                "y": 1288,
+                "w": 184,
+                "h": 184
+            },
+            "index": 74
+        },
+        "Grass.png": {
+            "frame": {
+                "x": 920,
+                "y": 1288,
+                "w": 184,
+                "h": 184
+            },
+            "index": 75
+        },
+        "Green Arrow Sign.png": {
+            "frame": {
+                "x": 1104,
+                "y": 1288,
+                "w": 184,
+                "h": 184
+            },
+            "index": 76
+        },
+        "Green Arrow Wallpaper.png": {
+            "frame": {
+                "x": 1288,
+                "y": 1288,
+                "w": 184,
+                "h": 184
+            },
+            "index": 77
+        },
+        "Green Background.png": {
+            "frame": {
+                "x": 1472,
+                "y": 1288,
+                "w": 184,
+                "h": 184
+            },
+            "index": 78
+        },
+        "Green Block.png": {
+            "frame": {
+                "x": 1656,
+                "y": 1288,
+                "w": 184,
+                "h": 184
+            },
+            "index": 79
+        },
+        "Green Couch.png": {
+            "frame": {
+                "x": 0,
+                "y": 1472,
+                "w": 184,
+                "h": 184
+            },
+            "index": 80
+        },
+        "Green Door.png": {
+            "frame": {
+                "x": 184,
+                "y": 1472,
+                "w": 184,
+                "h": 184
+            },
+            "index": 81
+        },
+        "Green Pipe.png": {
+            "frame": {
+                "x": 368,
+                "y": 1472,
+                "w": 184,
+                "h": 184
+            },
+            "index": 82
+        },
+        "Green Stripe Pillar.png": {
+            "frame": {
+                "x": 552,
+                "y": 1472,
+                "w": 184,
+                "h": 184
+            },
+            "index": 83
+        },
+        "Grey Block.png": {
+            "frame": {
+                "x": 736,
+                "y": 1472,
+                "w": 184,
+                "h": 184
+            },
+            "index": 84
+        },
+        "Grey Couch.png": {
+            "frame": {
+                "x": 920,
+                "y": 1472,
+                "w": 184,
+                "h": 184
+            },
+            "index": 85
+        },
+        "Growing Plant.png": {
+            "frame": {
+                "x": 1104,
+                "y": 1472,
+                "w": 184,
+                "h": 184
+            },
+            "index": 86
+        },
+        "Happy Dirt Background.png": {
+            "frame": {
+                "x": 1288,
+                "y": 1472,
+                "w": 184,
+                "h": 184
+            },
+            "index": 87
+        },
+        "Happy Dirt,.png": {
+            "frame": {
+                "x": 1472,
+                "y": 1472,
+                "w": 184,
+                "h": 184
+            },
+            "index": 88
+        },
+        "Happy Sign.png": {
+            "frame": {
+                "x": 1656,
+                "y": 1472,
+                "w": 184,
+                "h": 184
+            },
+            "index": 89
+        },
+        "Happy Time Sun.png": {
+            "frame": {
+                "x": 0,
+                "y": 1656,
+                "w": 184,
+                "h": 184
+            },
+            "index": 90
+        },
+        "Hedge.png": {
+            "frame": {
+                "x": 184,
+                "y": 1656,
+                "w": 184,
+                "h": 184
+            },
+            "index": 91
+        },
+        "Ice Block.png": {
+            "frame": {
+                "x": 368,
+                "y": 1656,
+                "w": 184,
+                "h": 184
+            },
+            "index": 92
+        },
+        "Iron Gate.png": {
+            "frame": {
+                "x": 552,
+                "y": 1656,
+                "w": 184,
+                "h": 184
+            },
+            "index": 93
+        },
+        "Iron Ladders.png": {
+            "frame": {
+                "x": 736,
+                "y": 1656,
+                "w": 184,
+                "h": 184
+            },
+            "index": 94
+        },
+        "Iron Spikes.png": {
+            "frame": {
+                "x": 920,
+                "y": 1656,
+                "w": 184,
+                "h": 184
+            },
+            "index": 95
+        },
+        "Jungle Vine.png": {
+            "frame": {
+                "x": 1104,
+                "y": 1656,
+                "w": 184,
+                "h": 184
+            },
+            "index": 96
+        },
+        "Lava Bricks Wall.png": {
+            "frame": {
+                "x": 1288,
+                "y": 1656,
+                "w": 184,
+                "h": 184
+            },
+            "index": 97
+        },
+        "Lava Bricks.png": {
+            "frame": {
+                "x": 1472,
+                "y": 1656,
+                "w": 184,
+                "h": 184
+            },
+            "index": 98
+        },
+        "Lava Lamp.png": {
+            "frame": {
+                "x": 1656,
+                "y": 1656,
+                "w": 184,
+                "h": 184
+            },
+            "index": 99
+        },
+        "Lava Rock.png": {
+            "frame": {
+                "x": 0,
+                "y": 1840,
+                "w": 184,
+                "h": 184
+            },
+            "index": 100
+        },
+        "Lava.png": {
+            "frame": {
+                "x": 184,
+                "y": 1840,
+                "w": 184,
+                "h": 184
+            },
+            "index": 101
+        },
+        "Marble Block.png": {
+            "frame": {
+                "x": 368,
+                "y": 1840,
+                "w": 184,
+                "h": 184
+            },
+            "index": 102
+        },
+        "Marble Pillar.png": {
+            "frame": {
+                "x": 552,
+                "y": 1840,
+                "w": 184,
+                "h": 184
+            },
+            "index": 103
+        },
+        "Microwave.png": {
+            "frame": {
+                "x": 736,
+                "y": 1840,
+                "w": 184,
+                "h": 184
+            },
+            "index": 104
+        },
+        "Moss Block.png": {
+            "frame": {
+                "x": 920,
+                "y": 1840,
+                "w": 184,
+                "h": 184
+            },
+            "index": 105
+        },
+        "Mossy Tile Background.png": {
+            "frame": {
+                "x": 1104,
+                "y": 1840,
+                "w": 184,
+                "h": 184
+            },
+            "index": 106
+        },
+        "Mossy Tile Block.png": {
+            "frame": {
+                "x": 1288,
+                "y": 1840,
+                "w": 184,
+                "h": 184
+            },
+            "index": 107
+        },
+        "Mushroom Block.png": {
+            "frame": {
+                "x": 1472,
+                "y": 1840,
+                "w": 184,
+                "h": 184
+            },
+            "index": 108
+        },
+        "Music Block.png": {
+            "frame": {
+                "x": 1656,
+                "y": 1840,
+                "w": 184,
+                "h": 184
+            },
+            "index": 109
+        },
+        "Neon Arrow.png": {
+            "frame": {
+                "x": 0,
+                "y": 2024,
+                "w": 184,
+                "h": 184
+            },
+            "index": 110
+        },
+        "Open Sign.png": {
+            "frame": {
+                "x": 184,
+                "y": 2024,
+                "w": 184,
+                "h": 184
+            },
+            "index": 111
+        },
+        "Orange Background.png": {
+            "frame": {
+                "x": 368,
+                "y": 2024,
+                "w": 184,
+                "h": 184
+            },
+            "index": 112
+        },
+        "Orange Block.png": {
+            "frame": {
+                "x": 552,
+                "y": 2024,
+                "w": 184,
+                "h": 184
+            },
+            "index": 113
+        },
+        "Palm Tree.png": {
+            "frame": {
+                "x": 736,
+                "y": 2024,
+                "w": 184,
+                "h": 184
+            },
+            "index": 114
+        },
+        "Pastel Blue Background.png": {
+            "frame": {
+                "x": 920,
+                "y": 2024,
+                "w": 184,
+                "h": 184
+            },
+            "index": 115
+        },
+        "Pastel Blue Block.png": {
+            "frame": {
+                "x": 1104,
+                "y": 2024,
+                "w": 184,
+                "h": 184
+            },
+            "index": 116
+        },
+        "Pastel Green Background.png": {
+            "frame": {
+                "x": 1288,
+                "y": 2024,
+                "w": 184,
+                "h": 184
+            },
+            "index": 117
+        },
+        "Pastel Green Block.png": {
+            "frame": {
+                "x": 1472,
+                "y": 2024,
+                "w": 184,
+                "h": 184
+            },
+            "index": 118
+        },
+        "Pastel Orange Background.png": {
+            "frame": {
+                "x": 1656,
+                "y": 2024,
+                "w": 184,
+                "h": 184
+            },
+            "index": 119
+        },
+        "Pastel Orange Block.png": {
+            "frame": {
+                "x": 0,
+                "y": 2208,
+                "w": 184,
+                "h": 184
+            },
+            "index": 120
+        },
+        "Pastel Pink Background.png": {
+            "frame": {
+                "x": 184,
+                "y": 2208,
+                "w": 184,
+                "h": 184
+            },
+            "index": 121
+        },
+        "Pastel Pink Block.png": {
+            "frame": {
+                "x": 368,
+                "y": 2208,
+                "w": 184,
+                "h": 184
+            },
+            "index": 122
+        },
+        "Pastel Purple Background.png": {
+            "frame": {
+                "x": 552,
+                "y": 2208,
+                "w": 184,
+                "h": 184
+            },
+            "index": 123
+        },
+        "Pastel Purple Block.png": {
+            "frame": {
+                "x": 736,
+                "y": 2208,
+                "w": 184,
+                "h": 184
+            },
+            "index": 124
+        },
+        "Pastel Red Background.png": {
+            "frame": {
+                "x": 920,
+                "y": 2208,
+                "w": 184,
+                "h": 184
+            },
+            "index": 125
+        },
+        "Pastel Red Block.png": {
+            "frame": {
+                "x": 1104,
+                "y": 2208,
+                "w": 184,
+                "h": 184
+            },
+            "index": 126
+        },
+        "Pastel Yellow Background.png": {
+            "frame": {
+                "x": 1288,
+                "y": 2208,
+                "w": 184,
+                "h": 184
+            },
+            "index": 127
+        },
+        "Pastel Yellow Block.png": {
+            "frame": {
+                "x": 1472,
+                "y": 2208,
+                "w": 184,
+                "h": 184
+            },
+            "index": 128
+        },
+        "Pink Block.png": {
+            "frame": {
+                "x": 1656,
+                "y": 2208,
+                "w": 184,
+                "h": 184
+            },
+            "index": 129
+        },
+        "Planks Background.png": {
+            "frame": {
+                "x": 0,
+                "y": 2392,
+                "w": 184,
+                "h": 184
+            },
+            "index": 130
+        },
+        "Planks Block.png": {
+            "frame": {
+                "x": 184,
+                "y": 2392,
+                "w": 184,
+                "h": 184
+            },
+            "index": 131
+        },
+        "Prison Bars.png": {
+            "frame": {
+                "x": 368,
+                "y": 2392,
+                "w": 184,
+                "h": 184
+            },
+            "index": 132
+        },
+        "Prison Door.png": {
+            "frame": {
+                "x": 552,
+                "y": 2392,
+                "w": 184,
+                "h": 184
+            },
+            "index": 133
+        },
+        "Pumpkin Block.png": {
+            "frame": {
+                "x": 736,
+                "y": 2392,
+                "w": 184,
+                "h": 184
+            },
+            "index": 134
+        },
+        "Purple Background.png": {
+            "frame": {
+                "x": 920,
+                "y": 2392,
+                "w": 184,
+                "h": 184
+            },
+            "index": 135
+        },
+        "Purple Block.png": {
+            "frame": {
+                "x": 1104,
+                "y": 2392,
+                "w": 184,
+                "h": 184
+            },
+            "index": 136
+        },
+        "Purple Entrance.png": {
+            "frame": {
+                "x": 1288,
+                "y": 2392,
+                "w": 184,
+                "h": 184
+            },
+            "index": 137
+        },
+        "Pyramid Wall.png": {
+            "frame": {
+                "x": 1472,
+                "y": 2392,
+                "w": 184,
+                "h": 184
+            },
+            "index": 138
+        },
+        "Rainbow Block.png": {
+            "frame": {
+                "x": 1656,
+                "y": 2392,
+                "w": 184,
+                "h": 184
+            },
+            "index": 139
+        },
+        "Red Arrow Wallpaper.png": {
+            "frame": {
+                "x": 0,
+                "y": 2576,
+                "w": 184,
+                "h": 184
+            },
+            "index": 140
+        },
+        "Red Background.png": {
+            "frame": {
+                "x": 184,
+                "y": 2576,
+                "w": 184,
+                "h": 184
+            },
+            "index": 141
+        },
+        "Red Block.png": {
+            "frame": {
+                "x": 368,
+                "y": 2576,
+                "w": 184,
+                "h": 184
+            },
+            "index": 142
+        },
+        "Red Bricks.png": {
+            "frame": {
+                "x": 552,
+                "y": 2576,
+                "w": 184,
+                "h": 184
+            },
+            "index": 143
+        },
+        "Red Door.png": {
+            "frame": {
+                "x": 736,
+                "y": 2576,
+                "w": 184,
+                "h": 184
+            },
+            "index": 144
+        },
+        "Red Light Block.png": {
+            "frame": {
+                "x": 920,
+                "y": 2576,
+                "w": 184,
+                "h": 184
+            },
+            "index": 145
+        },
+        "Retro Radio.png": {
+            "frame": {
+                "x": 1104,
+                "y": 2576,
+                "w": 184,
+                "h": 184
+            },
+            "index": 146
+        },
+        "Rock.png": {
+            "frame": {
+                "x": 1288,
+                "y": 2576,
+                "w": 184,
+                "h": 184
+            },
+            "index": 147
+        },
+        "Roof Lamp.png": {
+            "frame": {
+                "x": 1472,
+                "y": 2576,
+                "w": 184,
+                "h": 184
+            },
+            "index": 148
+        },
+        "Rose.png": {
+            "frame": {
+                "x": 1656,
+                "y": 2576,
+                "w": 184,
+                "h": 184
+            },
+            "index": 149
+        },
+        "Sand Block.png": {
+            "frame": {
+                "x": 0,
+                "y": 2760,
+                "w": 184,
+                "h": 184
+            },
+            "index": 150
+        },
+        "Sand Bricks Background.png": {
+            "frame": {
+                "x": 184,
+                "y": 2760,
+                "w": 184,
+                "h": 184
+            },
+            "index": 151
+        },
+        "Sand Bricks.png": {
+            "frame": {
+                "x": 368,
+                "y": 2760,
+                "w": 184,
+                "h": 184
+            },
+            "index": 152
+        },
+        "Sandstone Entrance.png": {
+            "frame": {
+                "x": 552,
+                "y": 2760,
+                "w": 184,
+                "h": 184
+            },
+            "index": 153
+        },
+        "Sandstone Platform.png": {
+            "frame": {
+                "x": 736,
+                "y": 2760,
+                "w": 184,
+                "h": 184
+            },
+            "index": 154
+        },
+        "Sandstone.png": {
+            "frame": {
+                "x": 920,
+                "y": 2760,
+                "w": 184,
+                "h": 184
+            },
+            "index": 155
+        },
+        "Scifi Arrow Sign.png": {
+            "frame": {
+                "x": 1104,
+                "y": 2760,
+                "w": 184,
+                "h": 184
+            },
+            "index": 156
+        },
+        "Scifi Background 1.png": {
+            "frame": {
+                "x": 1288,
+                "y": 2760,
+                "w": 184,
+                "h": 184
+            },
+            "index": 157
+        },
+        "Scifi Background 2.png": {
+            "frame": {
+                "x": 1472,
+                "y": 2760,
+                "w": 184,
+                "h": 184
+            },
+            "index": 158
+        },
+        "Scifi Background Window.png": {
+            "frame": {
+                "x": 1656,
+                "y": 2760,
+                "w": 184,
+                "h": 184
+            },
+            "index": 159
+        },
+        "Scifi Chair,.png": {
+            "frame": {
+                "x": 0,
+                "y": 2944,
+                "w": 184,
+                "h": 184
+            },
+            "index": 160
+        },
+        "Scifi Entrance 2.png": {
+            "frame": {
+                "x": 184,
+                "y": 2944,
+                "w": 184,
+                "h": 184
+            },
+            "index": 161
+        },
+        "Scifi Entrance.png": {
+            "frame": {
+                "x": 368,
+                "y": 2944,
+                "w": 184,
+                "h": 184
+            },
+            "index": 162
+        },
+        "Scifi Exlamation Sign.png": {
+            "frame": {
+                "x": 552,
+                "y": 2944,
+                "w": 184,
+                "h": 184
+            },
+            "index": 163
+        },
+        "Scifi Generator.png": {
+            "frame": {
+                "x": 736,
+                "y": 2944,
+                "w": 184,
+                "h": 184
+            },
+            "index": 164
+        },
+        "Scifi Pipe.png": {
+            "frame": {
+                "x": 920,
+                "y": 2944,
+                "w": 184,
+                "h": 184
+            },
+            "index": 165
+        },
+        "Scifi Wallpaper.png": {
+            "frame": {
+                "x": 1104,
+                "y": 2944,
+                "w": 184,
+                "h": 184
+            },
+            "index": 166
+        },
+        "Skull Block.png": {
+            "frame": {
+                "x": 1288,
+                "y": 2944,
+                "w": 184,
+                "h": 184
+            },
+            "index": 167
+        },
+        "Skull Prop.png": {
+            "frame": {
+                "x": 1472,
+                "y": 2944,
+                "w": 184,
+                "h": 184
+            },
+            "index": 168
+        },
+        "Slime Block.png": {
+            "frame": {
+                "x": 1656,
+                "y": 2944,
+                "w": 184,
+                "h": 184
+            },
+            "index": 169
+        },
+        "Snow Block.png": {
+            "frame": {
+                "x": 0,
+                "y": 3128,
+                "w": 184,
+                "h": 184
+            },
+            "index": 170
+        },
+        "Snowy Rock.png": {
+            "frame": {
+                "x": 184,
+                "y": 3128,
+                "w": 184,
+                "h": 184
+            },
+            "index": 171
+        },
+        "Space Flowers.png": {
+            "frame": {
+                "x": 368,
+                "y": 3128,
+                "w": 184,
+                "h": 184
+            },
+            "index": 172
+        },
+        "Space Grass.png": {
+            "frame": {
+                "x": 552,
+                "y": 3128,
+                "w": 184,
+                "h": 184
+            },
+            "index": 173
+        },
+        "Space Wallpaper.png": {
+            "frame": {
+                "x": 736,
+                "y": 3128,
+                "w": 184,
+                "h": 184
+            },
+            "index": 174
+        },
+        "Steel Platform.png": {
+            "frame": {
+                "x": 920,
+                "y": 3128,
+                "w": 184,
+                "h": 184
+            },
+            "index": 175
+        },
+        "Stone Block.png": {
+            "frame": {
+                "x": 1104,
+                "y": 3128,
+                "w": 184,
+                "h": 184
+            },
+            "index": 176
+        },
+        "Stone Wall.png": {
+            "frame": {
+                "x": 1288,
+                "y": 3128,
+                "w": 184,
+                "h": 184
+            },
+            "index": 177
+        },
+        "Stove.png": {
+            "frame": {
+                "x": 1472,
+                "y": 3128,
+                "w": 184,
+                "h": 184
+            },
+            "index": 178
+        },
+        "Striped Block.png": {
+            "frame": {
+                "x": 1656,
+                "y": 3128,
+                "w": 184,
+                "h": 184
+            },
+            "index": 179
+        },
+        "Stylished Sand Bricks.png": {
+            "frame": {
+                "x": 0,
+                "y": 3312,
+                "w": 184,
+                "h": 184
+            },
+            "index": 180
+        },
+        "Sugar Cane.png": {
+            "frame": {
+                "x": 184,
+                "y": 3312,
+                "w": 184,
+                "h": 184
+            },
+            "index": 181
+        },
+        "Table Lamp.png": {
+            "frame": {
+                "x": 368,
+                "y": 3312,
+                "w": 184,
+                "h": 184
+            },
+            "index": 182
+        },
+        "Terracotta Block.png": {
+            "frame": {
+                "x": 552,
+                "y": 3312,
+                "w": 184,
+                "h": 184
+            },
+            "index": 183
+        },
+        "Terracotta Wall.png": {
+            "frame": {
+                "x": 736,
+                "y": 3312,
+                "w": 184,
+                "h": 184
+            },
+            "index": 184
+        },
+        "Time Jammer.png": {
+            "frame": {
+                "x": 920,
+                "y": 3312,
+                "w": 184,
+                "h": 184
+            },
+            "index": 185
+        },
+        "Toilet.png": {
+            "frame": {
+                "x": 1104,
+                "y": 3312,
+                "w": 184,
+                "h": 184
+            },
+            "index": 186
+        },
+        "Torch.png": {
+            "frame": {
+                "x": 1288,
+                "y": 3312,
+                "w": 184,
+                "h": 184
+            },
+            "index": 187
+        },
+        "Traffic Lights.png": {
+            "frame": {
+                "x": 1472,
+                "y": 3312,
+                "w": 184,
+                "h": 184
+            },
+            "index": 188
+        },
+        "Treasure Barrel.png": {
+            "frame": {
+                "x": 1656,
+                "y": 3312,
+                "w": 184,
+                "h": 184
+            },
+            "index": 189
+        },
+        "Wall Clock.png": {
+            "frame": {
+                "x": 0,
+                "y": 3496,
+                "w": 184,
+                "h": 184
+            },
+            "index": 190
+        },
+        "Wall Light.png": {
+            "frame": {
+                "x": 184,
+                "y": 3496,
+                "w": 184,
+                "h": 184
+            },
+            "index": 191
+        },
+        "Washing Machine.png": {
+            "frame": {
+                "x": 368,
+                "y": 3496,
+                "w": 184,
+                "h": 184
+            },
+            "index": 192
+        },
+        "Wheat.png": {
+            "frame": {
+                "x": 552,
+                "y": 3496,
+                "w": 184,
+                "h": 184
+            },
+            "index": 193
+        },
+        "White Background.png": {
+            "frame": {
+                "x": 736,
+                "y": 3496,
+                "w": 184,
+                "h": 184
+            },
+            "index": 194
+        },
+        "White Block.png": {
+            "frame": {
+                "x": 920,
+                "y": 3496,
+                "w": 184,
+                "h": 184
+            },
+            "index": 195
+        },
+        "White Door.png": {
+            "frame": {
+                "x": 1104,
+                "y": 3496,
+                "w": 184,
+                "h": 184
+            },
+            "index": 196
+        },
+        "White Steel Block.png": {
+            "frame": {
+                "x": 1288,
+                "y": 3496,
+                "w": 184,
+                "h": 184
+            },
+            "index": 197
+        },
+        "Window.png": {
+            "frame": {
+                "x": 1472,
+                "y": 3496,
+                "w": 184,
+                "h": 184
+            },
+            "index": 198
+        },
+        "Wooden Block.png": {
+            "frame": {
+                "x": 1656,
+                "y": 3496,
+                "w": 184,
+                "h": 184
+            },
+            "index": 199
+        },
+        "Wooden Chair.png": {
+            "frame": {
+                "x": 0,
+                "y": 3680,
+                "w": 184,
+                "h": 184
+            },
+            "index": 200
+        },
+        "Wooden Crate.png": {
+            "frame": {
+                "x": 184,
+                "y": 3680,
+                "w": 184,
+                "h": 184
+            },
+            "index": 201
+        },
+        "Wooden Door.png": {
+            "frame": {
+                "x": 368,
+                "y": 3680,
+                "w": 184,
+                "h": 184
+            },
+            "index": 202
+        },
+        "Wooden Fence.png": {
+            "frame": {
+                "x": 552,
+                "y": 3680,
+                "w": 184,
+                "h": 184
+            },
+            "index": 203
+        },
+        "Wooden Ladders.png": {
+            "frame": {
+                "x": 736,
+                "y": 3680,
+                "w": 184,
+                "h": 184
+            },
+            "index": 204
+        },
+        "Wooden Platform.png": {
+            "frame": {
+                "x": 920,
+                "y": 3680,
+                "w": 184,
+                "h": 184
+            },
+            "index": 205
+        },
+        "Wooden Sign.png": {
+            "frame": {
+                "x": 1104,
+                "y": 3680,
+                "w": 184,
+                "h": 184
+            },
+            "index": 206
+        },
+        "Wooden Table.png": {
+            "frame": {
+                "x": 1288,
+                "y": 3680,
+                "w": 184,
+                "h": 184
+            },
+            "index": 207
+        },
+        "World Controller.png": {
+            "frame": {
+                "x": 1472,
+                "y": 3680,
+                "w": 184,
+                "h": 184
+            },
+            "index": 208
+        },
+        "World Door.png": {
+            "frame": {
+                "x": 1656,
+                "y": 3680,
+                "w": 184,
+                "h": 184
+            },
+            "index": 209
+        },
+        "Yellow Arrow Wallpaper.png": {
+            "frame": {
+                "x": 0,
+                "y": 3864,
+                "w": 184,
+                "h": 184
+            },
+            "index": 210
+        },
+        "Yellow Background.png": {
+            "frame": {
+                "x": 184,
+                "y": 3864,
+                "w": 184,
+                "h": 184
+            },
+            "index": 211
+        },
+        "Yellow Block.png": {
+            "frame": {
+                "x": 368,
+                "y": 3864,
+                "w": 184,
+                "h": 184
+            },
+            "index": 212
+        },
+        "Yellow Door.png": {
+            "frame": {
+                "x": 552,
+                "y": 3864,
+                "w": 184,
+                "h": 184
+            },
+            "index": 213
+        },
+        "Yellow Dotted Wallpaper.png": {
+            "frame": {
+                "x": 736,
+                "y": 3864,
+                "w": 184,
+                "h": 184
+            },
+            "index": 214
+        }
+    }
+}
