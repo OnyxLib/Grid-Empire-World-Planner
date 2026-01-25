@@ -304,12 +304,9 @@
                         const dataUrl = tempCanvas.toDataURL();
                         const img = document.createElement('img');
                         img.src = dataUrl;
-                        img.title = name; // Shows name on hover
-                        img.className = 'palette-tile';
-
+                        img.title = name.replace(".png", "").replace(".jpg", ""); // Shows name on hover
                         // Attach click event to select the tile
                         img.onclick = () => selectTile(dataUrl, img);
-
                         palette.appendChild(img);
                     });
 
@@ -550,7 +547,7 @@
                 reader.onload = (ev) => {
                     const img = document.createElement('img');
                     img.src = ev.target.result;
-                    img.title = file.name;
+                    img.title = file.name.replace(".png", "").replace(".jpg", "");
                     img.onclick = () => selectTile(img.src, img);
                     document.getElementById('tilePalette').appendChild(img);
                 };
@@ -627,7 +624,7 @@
                 const layer = mapData[layerName];
                 for (let coord in layer) {
                     const tile = layer[coord];
-                    const name = (nameLookup[tile.src] || "Unknown").replace(".png", "").replace(".jpg", "");
+                    const name = (nameLookup[tile.src] || "Unknown");
                     counts[name] = (counts[name] || 0) + 1;
                 }
             });
