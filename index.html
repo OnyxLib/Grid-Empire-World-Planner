@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2D World Planner</title>
+    <title>GE Web World Planner</title>
     <style>
         :root {
             --bg-dark: #121212;
@@ -34,30 +34,26 @@
             padding: 15px;
             overflow-y: hidden;
             overflow-x: hidden;
-            z-index: 10;
-        }
-
-        h2 {
-            font-size: 1.1rem;
-            margin: 0 0 15px 0;
-            color: var(--accent);
-            display: flex;
-            justify-content: space-between;
         }
 
         h4 {
-            margin: 12px 0 6px 0;
+            margin: 6px 0 6px 0;
             font-size: 0.8rem;
             text-transform: uppercase;
             color: #9ca3af;
         }
 
         /* UI Elements */
-        .control-row {
+        .dual-control-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 5px;
-            margin-bottom: 5px;
+        }
+
+        .trip-control-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 5px;
         }
 
         select,
@@ -69,7 +65,7 @@
             border: 1px solid var(--border);
             color: white;
             border-radius: 4px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             margin-bottom: 5px;
         }
 
@@ -85,11 +81,6 @@
         button.active {
             background: var(--accent);
             border-color: white;
-        }
-
-        .primary {
-            background: var(--accent);
-            border: none;
             font-weight: bold;
         }
 
@@ -97,7 +88,7 @@
         #tileSearch {
             background: #111;
             border-color: var(--accent);
-            width: 94%;
+            width: 90%;
         }
 
         .palette {
@@ -107,7 +98,7 @@
             background: #111;
             padding: 8px;
             border-radius: 4px;
-            max-height: 200px;
+            max-height: 220px;
             overflow-x: hidden;
             overflow-y: scroll;
             scrollbar-width: none;
@@ -152,24 +143,27 @@
 
         }
 
-        .toolbar-top {
-            position: absolute;
-            top: 10px;
-            left: 340px;
-            display: flex;
-            gap: 10px;
-            z-index: 5;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 8px;
+        .info {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--panel-bg);
+            border: 2px solid var(--accent);
+            padding: 15px;
             border-radius: 8px;
-            border: 1px solid var(--border);
-            align-items: center;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            max-width: 250px;
+            text-align: center;
         }
 
         #coordDisplay {
             color: #10b981;
-            font-weight: bold;
             font-family: monospace;
+            height: 110%;
+            align-self: center;
+            margin: 0px;
         }
 
         .palette::-webkit-scrollbar {
@@ -182,19 +176,14 @@
 <body>
 
     <aside class="sidebar">
-        <h2>Planner <span>v2.0</span></h2>
-
         <div class="control-group">
             <h4>Tools & Layers</h4>
-            <select id="layerSelect">
-                <option value="background">Background Layer</option>
-                <option value="foreground">Foreground Layer</option>
-            </select>
-            <div class="control-row">
+            <button id="layerSelect" onclick="toggleLayer()">Block Layer</button>
+            <div class="trip-control-row">
                 <button id="btnBrush" onclick="setTool('brush')">Brush</button>
-                <button id="btnBucket" onclick="setTool('bucket')">Bucket</button>
+                <button id="btnBucket" onclick="setTool('bucket')">Fill</button>
+                <button id="btnPan" class="active" onclick="setTool('pan')">Pan</button>
             </div>
-            <button id="btnPan" class="active" onclick="setTool('pan')">Pan (Hand Tool)</button>
 
             <h4>Brush Size</h4>
             <select id="brushSize">
@@ -207,45 +196,50 @@
         </div>
 
         <div class="control-group">
-            <h4>Tiles</h4>
+            <h4>Blocks</h4>
             <input type="text" id="tileSearch" placeholder="Search tiles..." oninput="filterTiles()">
             <div id="tilePalette" class="palette"></div>
-            <button onclick="document.getElementById('tileUpload').click()" style="margin-top:5px">Add Custom
-                Photos</button>
-            <input type="file" id="tileUpload" accept="image/*" multiple style="display:none">
-            <div class="control-row" style="margin-top:5px">
-                <button onclick="rotateTile()">Rotate</button>
-                <button onclick="flipTile()">Mirror</button>
+            <div class="dual-control-row" style="margin-top:5px">
+                <button id="rotation" onclick="rotateTile()">Rot: 0°</button>
+                <button id="mirror" onclick="flipTile()">Mirror: Off</button>
             </div>
+            <button onclick="document.getElementById('tileUpload').click()">Import Custom Blocks</button>
+            <input type="file" id="tileUpload" accept="image/*" multiple style="display:none">
         </div>
 
         <div class="control-group">
-            <h4>Map Settings</h4>
-            <button onclick="toggleGrid()">Toggle Grid (G)</button>
-            <button onclick="document.getElementById('bgUpload').click()">Set Map BG Image</button>
+            <h4>World Settings</h4>
+            <div class="dual-control-row">
+                <button onclick="toggleGrid()">Toggle Grid</button>
+                <button onclick="clearMap()">Clear World</button>
+            </div>
+            <button onclick="addBedrockLayers()">Add Bedrock Layer</button>
+            <button onclick="saveAsPNG()">Save World Image</button>
+            <button onclick="document.getElementById('bgUpload').click()">Set World BG Image</button>
             <input type="file" id="bgUpload" accept="image/*" style="display:none">
-            <button onclick="clearMap()">Clear Map</button>
-        </div>
-
-        <div class="control-group">
-            <h4>Exports</h4>
-            <button onclick="exportMapFile()" class="primary">Export .map File</button>
-            <button onclick="document.getElementById('mapImport').click()">Import .map File</button>
+            <button onclick="exportMapFile()">Export World Data</button>
+            <button onclick="document.getElementById('mapImport').click()">Import World Data</button>
             <input type="file" id="mapImport" accept=".map" style="display:none">
-            <button onclick="exportTileList()">Export Used Tile List</button>
-            <button onclick="saveAsPNG()">Save PNG</button>
-
+            <button onclick="exportTileList()">Export Block List</button>
+            <button onclick="showInfo()">Info</button>
         </div>
+        <h4 id="coordDisplay">Tile Position: (0, 0)</h4>
     </aside>
-
-    <div class="toolbar-top">
-        <span id="zoomText">Zoom: 100%</span>
-        <span id="coordDisplay">Coord: 0, 0</span>
-        <span style="color: #666;">Scroll to Zoom | Ctrl+Z: Undo | Ctrl+G: Grid</span>
-    </div>
 
     <main class="viewport">
         <canvas id="mainCanvas"></canvas>
+
+        <div class="info" id="myForm">
+            <h4 style="color: var(--accent);">Version: 1.2</h4>
+            <p style="font-size: 0.9rem; line-height: 1.4;">
+                Happy Birthday to You,<br>
+                Happy Birthday to You,<br>
+                Happy Birthday Dear User,<br>
+                Onyx update this text!
+            </p>
+            <h4 style="color: var(--accent);">Website by: Onyx</h4>
+            <button onclick="showInfo()">Close</button>
+        </div>
     </main>
 
     <script>
@@ -259,10 +253,35 @@
         let mapData = { background: {}, foreground: {} };
         let history = [], redoStack = [];
         let selectedTileData = null;
+        let currentLayer = "foreground";
         let clipboard = null;
         let tool = 'pan';
         let zoom = 1.00, rotation = 0, flipped = false, showGrid = true;
+        let lastX = null;
+        let lastY = null;
+        let isInfoVisible = false; // Renamed from showInfo to avoid collision with function name
         const imgCache = {};
+
+        //import tiles
+        loadSpritesheet();
+
+        //add bedrock
+        addBedrockLayers();
+
+        // Setup Background Image
+        let bgImage = new Image();
+        bgImage.src = 'backgrounds/GE_spring_background.jpg';
+        bgImage.onload = () => draw();
+        bgImage.onerror = () => console.log("Default background not found.");
+
+        canvas.width = COLS * TILE_SIZE;
+        canvas.height = ROWS * TILE_SIZE;
+
+        //event listeners
+        canvas.addEventListener('mousedown', handleInput);
+        canvas.addEventListener('mousemove', handleInput);
+        window.addEventListener('mouseup', () => { lastX = null; lastY = null; });
+        canvas.oncontextmenu = (e) => e.preventDefault();
 
         // --- Improved Spritesheet Loader ---
         async function loadSpritesheet() {
@@ -302,7 +321,7 @@
                     const dataUrl = tempCanvas.toDataURL();
                     const img = document.createElement('img');
                     img.src = dataUrl;
-                    img.title = name.replace(".png", "").replace(".jpg", "");
+                    img.title = name;
                     img.onclick = () => selectTile(dataUrl, img);
                     palette.appendChild(img);
                 });
@@ -313,17 +332,6 @@
                 console.error("Failed to load spritesheet:", err);
             }
         }
-
-        loadSpritesheet();
-
-        // Setup Background Image
-        let bgImage = new Image();
-        bgImage.src = 'backgrounds/ztestbg1.jpg';
-        bgImage.onload = () => draw();
-        bgImage.onerror = () => console.log("Default background not found.");
-
-        canvas.width = COLS * TILE_SIZE;
-        canvas.height = ROWS * TILE_SIZE;
 
         function selectTile(src, el) {
             document.querySelectorAll('.palette img, .palette .color-tile').forEach(i => i.classList.remove('selected'));
@@ -415,8 +423,7 @@
         }
 
         function floodFill(startX, startY) {
-            const activeLayer = document.getElementById('layerSelect').value;
-            const layer = mapData[activeLayer];
+            const layer = mapData[currentLayer];
             const target = layer[`${startX},${startY}`]?.src || null;
             if (target === selectedTileData) return;
 
@@ -432,9 +439,6 @@
             }
         }
 
-        let lastX = null;
-        let lastY = null;
-
         function handleInput(e) {
             const rect = canvas.getBoundingClientRect();
             const mouseX = Math.floor((e.clientX - rect.left) / (TILE_SIZE * zoom));
@@ -442,7 +446,7 @@
 
             if (mouseX >= 0 && mouseX < COLS && mouseY >= 0 && mouseY < ROWS) {
                 const displayY = (ROWS - 1) - mouseY;
-                coordDisplay.innerText = `Coord: ${mouseX}, ${displayY}`;
+                coordDisplay.innerText = `Tile Position: (${mouseX}, ${displayY})`;
             }
 
             if (tool === 'pan' && e.buttons === 1) {
@@ -467,8 +471,6 @@
                 lastY = mouseY;
             }
 
-            const activeLayer = document.getElementById('layerSelect').value;
-
             if (tool === 'bucket' && e.buttons === 1) {
                 floodFill(mouseX, mouseY);
             } else {
@@ -482,7 +484,7 @@
                 let curY = lastY;
 
                 while (true) {
-                    placeBrush(curX, curY, activeLayer, e.buttons);
+                    placeBrush(curX, curY, currentLayer, e.buttons);
                     if (curX === mouseX && curY === mouseY) break;
                     const e2 = 2 * err;
                     if (e2 > -dy) { err -= dy; curX += sx; }
@@ -568,7 +570,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'my-world-map.map';
+            a.download = 'world_data.map';
             a.click();
             URL.revokeObjectURL(url);
         }
@@ -599,20 +601,42 @@
         function changeZoom(delta) {
             zoom = Math.min(Math.max(0.5, zoom + delta), 10);
             canvas.style.transform = `scale(${zoom})`;
-            document.getElementById('zoomText').innerText = `Zoom: ${Math.round(zoom * 100)}%`;
         }
 
-        canvas.addEventListener('mousedown', handleInput);
-        canvas.addEventListener('mousemove', handleInput);
-        window.addEventListener('mouseup', () => { lastX = null; lastY = null; });
-        canvas.oncontextmenu = (e) => e.preventDefault();
+        function rotateTile() {
+            rotation = (rotation + 90) % 360;
+            document.getElementById('rotation').innerText = `Rot: ${rotation}°`;
+        }
 
-        function rotateTile() { rotation = (rotation + 90) % 360; }
-        function flipTile() { flipped = !flipped; }
-        function clearMap() { if (confirm("Clear?")) { saveState(); mapData = { background: {}, foreground: {} }; draw(); } }
+        function flipTile() {
+            flipped = !flipped;
+            document.getElementById('mirror').innerText = `Mirror: ${(flipped) ? "On" : "Off"}`;
+        }
+
+        function toggleLayer() {
+            layerGE = "Block"
+            if (currentLayer == "foreground") {
+                currentLayer = "background"
+                layerGE = "BG"
+            }
+            else {
+                currentLayer = "foreground"
+                layerGE = "Block"
+            }
+            document.getElementById('layerSelect').innerText = `${layerGE} Layer`;
+        }
+
+        // --- Info Logic ---
+        function showInfo() {
+            isInfoVisible = !isInfoVisible;
+            document.getElementById("myForm").style.display = (isInfoVisible) ? "block" : "none";
+        }
+
+        //addbedrocklayer has the draw() function. No need to call it again.
+        function clearMap() { if (confirm("Clear?")) { saveState(); mapData = { background: {}, foreground: {} }; addBedrockLayers(); } }
 
         function saveAsPNG() {
-            const a = document.createElement('a'); a.download = 'map.png';
+            const a = document.createElement('a'); a.download = 'world_render.png';
             a.href = canvas.toDataURL(); a.click();
         }
 
@@ -644,9 +668,40 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'used-tiles-list.txt';
+            a.download = 'used_block_list.txt';
             a.click();
             URL.revokeObjectURL(url);
+        }
+
+        function addBedrockLayers() {
+            saveState();
+            const paletteItems = document.querySelectorAll('#tilePalette img');
+            let bedrockSrc = null;
+
+            // Search for a tile with the title "Bedrock" (case insensitive)
+            paletteItems.forEach(img => {
+                if (img.title.toLowerCase() === 'bedrock') {
+                    bedrockSrc = img.src;
+                }
+            });
+
+            if (!bedrockSrc) {
+                console.log("Bedrock tile not found.");
+                return;
+            }
+
+            // Fill the bottom 3 rows (57, 58, 59 in a 60-row grid)
+            for (let x = 0; x < COLS; x++) {
+                for (let y = ROWS - 3; y < ROWS; y++) {
+                    mapData.foreground[`${x},${y}`] = {
+                        src: bedrockSrc,
+                        rotation: 0,
+                        flipped: false
+                    };
+                }
+            }
+            draw();
+            console.log("Added 3 layers of Bedrock to the bottom.");
         }
     </script>
 </body>
