@@ -260,12 +260,11 @@
         let history = [], redoStack = [];
         let selectedTileData = null;
         let clipboard = null;
-        let tool = 'pan'; // 'brush', 'bucket', or 'pan'
+        let tool = 'pan';
         let zoom = 1.00, rotation = 0, flipped = false, showGrid = true;
+        const imgCache = {};
 
-        // Setup tiles
-        // --- setup tiles ---
-
+        // --- Improved Spritesheet Loader ---
         async function loadSpritesheet() {
             try {
                 const response = await fetch('spritesheet.json');
@@ -273,69 +272,58 @@
                 const data = await response.json();
 
                 const spriteImg = new Image();
-                // Use the filename from JSON meta or default
+                spriteImg.crossOrigin = "anonymous";
                 spriteImg.src = data.meta.image || 'spritesheet.png';
 
-                spriteImg.onload = () => {
-                    const palette = document.getElementById('tilePalette');
-                    palette.innerHTML = '';
+                // Use decode() to ensure the image is fully ready for slicing
+                try {
+                    await spriteImg.decode();
+                } catch (e) {
+                    throw new Error("Master spritesheet image could not be decoded. Ensure 'spritesheet.png' is correct.");
+                }
 
-                    const tempCanvas = document.createElement('canvas');
-                    const tCtx = tempCanvas.getContext('2d');
+                const palette = document.getElementById('tilePalette');
+                palette.innerHTML = '';
 
-                    const frames = Object.entries(data.frames).sort((a, b) => a[1].index - b[1].index);
+                const tempCanvas = document.createElement('canvas');
+                const tCtx = tempCanvas.getContext('2d');
 
-                    frames.forEach(([name, info]) => {
-                        const { x, y, w, h } = info.frame;
+                const frames = Object.entries(data.frames).sort((a, b) => a[1].index - b[1].index);
 
-                        tempCanvas.width = w;
-                        tempCanvas.height = h;
-                        tCtx.clearRect(0, 0, w, h);
-                        tCtx.drawImage(spriteImg, x, y, w, h, 0, 0, w, h);
+                frames.forEach(([name, info]) => {
+                    const { x, y, w, h } = info.frame;
+                    if (w === 0 || h === 0) return;
 
-                        const dataUrl = tempCanvas.toDataURL();
+                    tempCanvas.width = w;
+                    tempCanvas.height = h;
+                    tCtx.clearRect(0, 0, w, h);
+                    tCtx.drawImage(spriteImg, x, y, w, h, 0, 0, w, h);
 
-                        // Create the Image object and Cache it immediately
-                        const img = new Image();
-                        img.src = dataUrl;
-                        img.title = name;
+                    const dataUrl = tempCanvas.toDataURL();
+                    const img = document.createElement('img');
+                    img.src = dataUrl;
+                    img.title = name.replace(".png", "").replace(".jpg", "");
+                    img.onclick = () => selectTile(dataUrl, img);
+                    palette.appendChild(img);
+                });
 
-                        // Store in the global imgCache using the DataURL string as the key
-                        // This prevents 'broken state' errors because the object is already created
-                        imgCache[dataUrl] = img;
-
-                        img.onclick = () => selectTile(dataUrl, img);
-                        palette.appendChild(img);
-                    });
-
-                    console.log("Spritesheet loaded and cached.");
-                    draw(); // Initial draw once tiles are ready
-                };
-
-                spriteImg.onerror = () => {
-                    console.error("Failed to load spritesheet image file. Check the filename in spritesheet.json.");
-                };
-
+                console.log(`Successfully imported ${frames.length} tiles.`);
+                draw();
             } catch (err) {
                 console.error("Failed to load spritesheet:", err);
             }
         }
 
-        // Initialize the load process
         loadSpritesheet();
-
 
         // Setup Background Image
         let bgImage = new Image();
-        bgImage.src = 'backgrounds/ztestbg1.jpg'; // Default background
+        bgImage.src = 'backgrounds/ztestbg1.jpg';
         bgImage.onload = () => draw();
         bgImage.onerror = () => console.log("Default background not found.");
 
-        const imgCache = {};
-
         canvas.width = COLS * TILE_SIZE;
         canvas.height = ROWS * TILE_SIZE;
-
 
         function selectTile(src, el) {
             document.querySelectorAll('.palette img, .palette .color-tile').forEach(i => i.classList.remove('selected'));
@@ -347,7 +335,8 @@
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if (bgImage && bgImage.complete) {
+            // Added safety check for naturalWidth to prevent "broken" state errors
+            if (bgImage && bgImage.complete && bgImage.naturalWidth > 0) {
                 ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
             }
 
@@ -363,27 +352,34 @@
             }
         }
 
-        function renderLayer(layer) {
+        async function renderLayer(layer) {
             for (let coord in layer) {
                 const [x, y] = coord.split(',').map(Number);
                 const tile = layer[coord];
 
-                const img = imgCache[tile.src];
-
-                // Only attempt to draw if the image exists in cache and is fully loaded
-                if (img && img.complete && img.naturalWidth !== 0) {
-                    ctx.save();
-                    ctx.translate(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2);
-                    ctx.rotate((tile.rotation * Math.PI) / 180);
-                    ctx.scale(tile.flipped ? -1 : 1, 1);
-
-                    ctx.drawImage(img, -TILE_SIZE / 2, -TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
-                    ctx.restore();
-                } else if (img && !img.complete) {
-                    // If the image is in the cache but not yet ready, 
-                    // trigger a redraw once it finishes loading
-                    img.onload = () => draw();
+                // Cache logic with safety for broken images
+                if (!imgCache[tile.src]) {
+                    const img = new Image();
+                    img.src = tile.src;
+                    try {
+                        await img.decode();
+                        imgCache[tile.src] = img;
+                    } catch (e) {
+                        console.warn("Skipping broken tile image:", tile.src);
+                        continue;
+                    }
                 }
+
+                const cachedImg = imgCache[tile.src];
+                // Final verification before drawImage
+                if (!cachedImg || cachedImg.naturalWidth === 0) continue;
+
+                ctx.save();
+                ctx.translate(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2);
+                ctx.rotate((tile.rotation * Math.PI) / 180);
+                ctx.scale(tile.flipped ? -1 : 1, 1);
+                ctx.drawImage(cachedImg, -TILE_SIZE / 2, -TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
+                ctx.restore();
             }
         }
 
@@ -418,8 +414,9 @@
             canvas.style.cursor = (t === 'pan') ? 'grab' : 'crosshair';
         }
 
-        function floodFill(startX, startY, targetTileSrc) {
-            const layer = mapData[document.getElementById('layerSelect').value];
+        function floodFill(startX, startY) {
+            const activeLayer = document.getElementById('layerSelect').value;
+            const layer = mapData[activeLayer];
             const target = layer[`${startX},${startY}`]?.src || null;
             if (target === selectedTileData) return;
 
@@ -533,8 +530,8 @@
 
         function filterTiles() {
             const query = document.getElementById('tileSearch').value.toLowerCase();
-            document.querySelectorAll('.palette img, .palette .color-tile').forEach(el => {
-                const name = (el.title || el.src || "").toLowerCase();
+            document.querySelectorAll('.palette img').forEach(el => {
+                const name = (el.title || "").toLowerCase();
                 el.style.display = name.includes(query) ? 'block' : 'none';
             });
         }
@@ -609,7 +606,6 @@
         canvas.addEventListener('mousemove', handleInput);
         window.addEventListener('mouseup', () => { lastX = null; lastY = null; });
         canvas.oncontextmenu = (e) => e.preventDefault();
-        draw();
 
         function rotateTile() { rotation = (rotation + 90) % 360; }
         function flipTile() { flipped = !flipped; }
@@ -625,7 +621,7 @@
             const paletteItems = document.querySelectorAll('#tilePalette > *');
             const nameLookup = {};
             paletteItems.forEach(item => {
-                const src = item.dataset.src || item.src;
+                const src = item.src;
                 if (src) nameLookup[src] = item.title;
             });
 
