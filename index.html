@@ -322,7 +322,7 @@
                     const img = document.createElement('img');
                     img.src = dataUrl;
                     img.title = name.replace(".png", "").replace(".jpg", "");
-                    img.onclick = () => selectTile(dataUrl, img);
+                    img.onclick = () => selectTile(img.src, img);
                     palette.appendChild(img);
                 });
 
@@ -707,4 +707,5 @@
 </body>
 
 </html>
+
 
