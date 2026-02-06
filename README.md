@@ -17,7 +17,7 @@ This repository was made to make accessing the website/application easier and mo
 Disclaimer: AI was used in the making of this application. 
 <br/>
 <br/>
-**UPDATE**: The pyhton application of the world planner is now discontinued. Instead, I remade the world planner in HTML/CSS/Javascript to run it as a website to make it more accessible and safe for users. I will keep the python version available for those that prefer it.
+**UPDATE**: The python application of the world planner is now discontinued. Instead, I remade the world planner in HTML/CSS/Javascript to run it as a website to make it more accessible and safe for users. I will keep the python version available for those that prefer it.
 ## Python Application Installation & Usage [DISCONTINUED]
 1. Go to the [Releases](https://github.com/OnyxLib/Grid-Empire-World-Planner/releases) and download the latest version of the "GE_WorldPlanner_Package.zip".
 2. Unzip "GE_WorldPlanner_Package.zip".
