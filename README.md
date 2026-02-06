@@ -29,7 +29,8 @@ Disclaimer: AI was used in the making of this application.
 - import tiles and backgrounds
 - search, rotate, mirror tiles
 - 1x1 to 5x5 brush sizes
-- fill tool
+- fill, select tool
+- copy and paste
 - toggle grid and layers
 - undo, redo
 - clear map
