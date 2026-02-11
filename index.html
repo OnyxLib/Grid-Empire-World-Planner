@@ -233,11 +233,11 @@
         <canvas id="mainCanvas"></canvas>
 
         <div class="info" id="myForm">
-            <h4 style="color: var(--accent);">Version: 1.3</h4>
+            <h4 style="color: var(--accent);">Version: 1.4</h4>
             <p style="font-size: 0.9rem; line-height: 1.4;">
                 Added features:<br>
-                Select Tool,<br>
-                Copy & Paste<br>
+                eyedropper tool,<br>
+                alt + left click the block<br>
 
             </p>
             <h4 style="color: var(--accent);">Website by: Onyx</h4>
@@ -477,6 +477,34 @@
                 coordDisplay.innerText = `Tile Position: (${mouseX}, ${displayY})`;
             }
 
+            // --- Eyedropper Tool Logic ---
+            if (e.altKey && e.buttons === 1 && e.type === 'mousedown') {
+                const key = `${mouseX},${mouseY}`;
+                const layer = mapData[currentLayer];
+                const tile = layer[key];
+
+                if (tile) {
+                    selectedTileData = tile.src;
+                    rotation = tile.rotation;
+                    flipped = tile.flipped;
+
+                    // Update UI states
+                    document.getElementById('rotation').innerText = `Rot: ${rotation}°`;
+                    document.getElementById('mirror').innerText = `Mirror: ${(flipped) ? "On" : "Off"}`;
+
+                    // Highlight in palette
+                    const paletteItems = document.querySelectorAll('.palette img, .palette .color-tile');
+                    paletteItems.forEach(el => {
+                        el.classList.toggle('selected', el.src === tile.src);
+                        if (el.src === tile.src) el.scrollIntoView({ block: 'nearest' });
+                    });
+
+                    // Force brush tool for immediate use
+                    setTool('brush');
+                }
+                return;
+            }
+
             if (tool === 'pan' && e.buttons === 1) {
                 canvas.style.cursor = 'grabbing';
                 viewport.scrollLeft -= e.movementX;
@@ -513,7 +541,7 @@
 
             if (tool === 'bucket' && e.buttons === 1) {
                 floodFill(mouseX, mouseY);
-            } else if (tool === 'brush') {
+            } else if (tool === 'brush' && !e.altKey) {
                 const dx = Math.abs(mouseX - lastX);
                 const dy = Math.abs(mouseY - lastY);
                 const sx = (lastX < mouseX) ? 1 : -1;
@@ -616,6 +644,10 @@
         }
 
         window.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                return;
+            }
+
             if (e.ctrlKey && e.key === 'z') undo();
             if (e.ctrlKey && e.key === 'Z') redo();
             if (e.key === 'g' || e.key === 'G') toggleGrid();
