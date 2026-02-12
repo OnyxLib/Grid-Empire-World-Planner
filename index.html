@@ -233,14 +233,9 @@
         <canvas id="mainCanvas"></canvas>
 
         <div class="info" id="myForm">
-            <h4 style="color: var(--accent);">Version: 1.4</h4>
-            <p style="font-size: 0.9rem; line-height: 1.4;">
-                Added features:<br>
-                eyedropper tool,<br>
-                alt + left click the block<br>
-
-            </p>
-            <h4 style="color: var(--accent);">Website by: Onyx</h4>
+            <h4 style="color: var(--accent);"><span id="headerText"></span></h4>
+            <p style="font-size: 0.9rem; line-height: 1.4;"><span id="bodyText"></span></p>
+            <h4 style="color: var(--accent);"><span id="endText"></span></h4>
             <button onclick="showInfo()">Close</button>
         </div>
     </main>
@@ -278,8 +273,6 @@
         bgImage.onload = () => draw();
         bgImage.onerror = () => console.log("Default background not found.");
 
-        showInfo(); //show current update
-
         canvas.width = COLS * TILE_SIZE;
         canvas.height = ROWS * TILE_SIZE;
 
@@ -289,7 +282,10 @@
         window.addEventListener('mouseup', handleMouseUp);
         canvas.oncontextmenu = (e) => e.preventDefault();
 
-        // --- Improved Spritesheet Loader ---
+        //starting popup
+        displayPopUp("Features addeded: \n eyedropper tool, \n alt + left click the block \n\n If you have feature suggestions, \n dm me in discord!", "Version 1.4", "Website by: Onyx");
+
+        // start of functions:
         async function loadSpritesheet() {
             try {
                 const response = await fetch('spritesheet.json');
@@ -845,6 +841,14 @@
             draw();
             console.log("Added 3 layers of Bedrock to the bottom.");
         }
+
+        function displayPopUp(body = "", header = "", end = "") {
+            document.getElementById('headerText').innerText = header;
+            document.getElementById('bodyText').innerText = body;
+            document.getElementById('endText').innerText = end;
+            showInfo();
+        }
+
     </script>
 </body>
 
