@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GE Web World Planner</title>
+    <title>Grid Empire Web World Planner</title>
     <style>
         :root {
             --bg-dark: #121212;
@@ -126,21 +126,20 @@
         /* Viewport */
         .viewport {
             position: relative;
-            overflow: auto;
+            overflow: hidden;
+            /* Changed from auto to hidden for transform-based panning */
             background: #0f0f0f;
-            display: block;
+            flex-grow: 1;
+            display: flex;
             justify-content: center;
             align-items: center;
-
         }
 
         canvas {
             display: block;
             image-rendering: pixelated;
             background-color: #1a1a1a;
-            justify-content: center;
-            align-items: center;
-
+            /* Transform origin handled by JS for precise control */
         }
 
         .info {
@@ -161,7 +160,7 @@
         #coordDisplay {
             color: #10b981;
             font-family: monospace;
-            height: 110%;
+            height: auto;
             align-self: center;
             margin: 0px;
         }
@@ -224,7 +223,10 @@
             <button onclick="document.getElementById('mapImport').click()">Import World Data</button>
             <input type="file" id="mapImport" accept=".map" style="display:none">
             <button onclick="exportTileList()">Export Block List</button>
-            <button onclick="showInfo()">Info</button>
+            <div class="dual-control-row">
+                <button onclick="showWebsiteInfo()">Info</button>
+                <button onclick="showKeybind()">Keybind</button>
+            </div>
         </div>
         <h4 id="coordDisplay">Tile Position: (0, 0)</h4>
     </aside>
@@ -254,6 +256,7 @@
         let currentLayer = "foreground";
         let tool = 'pan';
         let zoom = 1.00, rotation = 0, flipped = false, showGrid = true;
+        let panX = 0, panY = 0;
         let lastX = null;
         let lastY = null;
         let isInfoVisible = false; // Renamed from showInfo to avoid collision with function name
@@ -265,7 +268,7 @@
         let clipboard = null; // { tiles: [], originX, originY }
 
         //import tiles, add beckrock after it finishes
-        loadSpritesheet().then(data => addBedrockLayers());
+        loadSpritesheet().then(data => { addBedrockLayers(); updateTransform(); });
 
         // Setup Background Image
         let bgImage = new Image();
@@ -283,7 +286,7 @@
         canvas.oncontextmenu = (e) => e.preventDefault();
 
         //starting popup
-        displayPopUp("Features addeded: \n eyedropper tool, \n alt + left click the block \n\n If you have feature suggestions, \n dm me in discord!", "Version 1.4", "Website by: Onyx");
+        showWebsiteInfo();
 
         // start of functions:
         async function loadSpritesheet() {
@@ -464,9 +467,18 @@
         }
 
         function handleInput(e) {
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = Math.floor((e.clientX - rect.left) / (TILE_SIZE * zoom));
-            const mouseY = Math.floor((e.clientY - rect.top) / (TILE_SIZE * zoom));
+            const vRect = viewport.getBoundingClientRect();
+
+            // Calculate coordinates relative to the transformed canvas
+            // We find the center of the viewport, account for current pan, then scale back to local space
+            const centerX = vRect.width / 2;
+            const centerY = vRect.height / 2;
+
+            const localX = (e.clientX - (vRect.left + centerX + panX)) / zoom + (canvas.width / 2);
+            const localY = (e.clientY - (vRect.top + centerY + panY)) / zoom + (canvas.height / 2);
+
+            const mouseX = Math.floor(localX / TILE_SIZE);
+            const mouseY = Math.floor(localY / TILE_SIZE);
 
             if (mouseX >= 0 && mouseX < COLS && mouseY >= 0 && mouseY < ROWS) {
                 const displayY = (ROWS - 1) - mouseY;
@@ -503,8 +515,9 @@
 
             if (tool === 'pan' && e.buttons === 1) {
                 canvas.style.cursor = 'grabbing';
-                viewport.scrollLeft -= e.movementX;
-                viewport.scrollTop -= e.movementY;
+                panX += e.movementX;
+                panY += e.movementY;
+                updateTransform();
                 return;
             } else if (tool === 'pan') {
                 canvas.style.cursor = 'grab';
@@ -640,29 +653,76 @@
         }
 
         window.addEventListener('keydown', e => {
+            // 1. Early exit if the user is typing in a form element
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
                 return;
             }
 
-            if (e.ctrlKey && e.key === 'z') undo();
-            if (e.ctrlKey && e.key === 'Z') redo();
-            if (e.key === 'g' || e.key === 'G') toggleGrid();
+            const key = e.key.toLowerCase();
 
-            // New Copy/Paste listeners
-            if (e.ctrlKey && e.key === 'c') {
-                e.preventDefault();
-                copySelection();
+            // Handle Ctrl/Cmd Shortcuts (Modifiers)
+            if (e.ctrlKey || e.metaKey) {
+                switch (key) {
+                    case 'z':
+                        e.preventDefault();
+                        // If Shift is also held, it's a Redo
+                        if (e.shiftKey) {
+                            redo();
+                        } else {
+                            undo();
+                        }
+                        break;
+                    case 'c':
+                        e.preventDefault();
+                        copySelection();
+                        break;
+                    case 'v':
+                        e.preventDefault();
+                        pasteSelection();
+                        break;
+                    case 'b':
+                        exportTileList(); break;
+                }
+                return;
             }
-            if (e.ctrlKey && e.key === 'v') {
-                e.preventDefault();
-                pasteSelection();
+
+            // Handle Single-Key Shortcuts (No Modifiers)
+            if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+                switch (key) {
+                    case 'g':
+                        toggleGrid(); break;
+                    case 'r':
+                        rotateTile(); break;
+                    case 'm':
+                        flipTile(); break;
+                    case 'b':
+                        setTool('brush'); break;
+                    case 's':
+                        setTool('select'); break;
+                    case 'p':
+                        setTool('pan'); break;
+                    case 'f':
+                        setTool('bucket'); break;
+                    case 'l':
+                        toggleLayer(); break;
+                    case 'c':
+                        clearMap(); break;
+                    case 'd':
+                        addBedrockLayers(); break;
+                    case 'i':
+                        saveAsPNG(); break;
+                    case 'w':
+                        showWebsiteInfo(); break;
+                    case 'k':
+                        showKeybind(); break;
+                }
             }
         });
 
         viewport.addEventListener('wheel', (e) => {
             e.preventDefault();
-            const delta = e.deltaY > 0 ? -0.1 : 0.1;
-            changeZoom(delta);
+            const delta = e.deltaY > 0 ? -0.2 : 0.2;
+            changeZoom(delta, e);
         }, { passive: false });
 
         function filterTiles() {
@@ -733,9 +793,32 @@
 
         function toggleGrid() { showGrid = !showGrid; draw(); }
 
-        function changeZoom(delta) {
-            zoom = Math.min(Math.max(0.5, zoom + delta), 10);
-            canvas.style.transform = `scale(${zoom})`;
+        function changeZoom(delta, e) {
+            const oldZoom = zoom;
+            zoom = Math.min(Math.max(0.4, zoom + delta), 10);
+
+            // If a mouse event is provided, calculate pan adjustment for zoom-to-cursor
+            if (e) {
+                const vRect = viewport.getBoundingClientRect();
+
+                // Get mouse position relative to the center of the viewport 
+                // (Matches how updateTransform applies translation)
+                const mouseX = e.clientX - (vRect.left + vRect.width / 2);
+                const mouseY = e.clientY - (vRect.top + vRect.height / 2);
+
+                const ratio = zoom / oldZoom;
+
+                // Adjust pan so the world-point under the cursor remains under the cursor
+                panX = mouseX - (mouseX - panX) * ratio;
+                panY = mouseY - (mouseY - panY) * ratio;
+            }
+
+            updateTransform();
+        }
+
+        function updateTransform() {
+            // Center the canvas in the viewport and apply pan/zoom
+            canvas.style.transform = `translate3d(${panX}px, ${panY}px, 0) scale(${zoom})`;
         }
 
         function rotateTile() {
@@ -847,6 +930,22 @@
             document.getElementById('bodyText').innerText = body;
             document.getElementById('endText').innerText = end;
             showInfo();
+        }
+
+        //improve this lmao
+        function showKeybind() {
+            displayPopUp(
+                "Draw: Left Click \n Erase: Right Click \n Zoom: Scroll Wheel \n Eyedropper: Alt + Left Click \n Undo: Ctrl + z \n Redo: Ctrl + Shift + z \n Copy: Ctrl + c \n Paste: Ctrl + v \n Export Block List: Ctrl + b \n brush: b \n Select: s \n Pan: p \n Fill: f \n Rotate: r \n Mirror: m \n Toggle Grid: g \n Toggle Layer: l \n Clear World: c \n Add Bedrock Layer: d \n Save World Image: i \n Info: w \n Keybind: k",
+                "Keybinds:",
+            );
+        }
+
+        function showWebsiteInfo() {
+            displayPopUp(
+                "Latest Features: \n most keybinds, \n better pan and zoom \n\n If you have suggestions, \n dm me in discord!",
+                "Version 1.5",
+                "Website by: Onyx"
+            );
         }
 
     </script>
