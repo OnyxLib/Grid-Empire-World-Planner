@@ -37,7 +37,8 @@ Disclaimer: AI was used in the making of this application.
 - select tile from tile map
 - Exportable map render, map file, list of blocks
 - Import map file
-- Eyedropper tool (alt + left click the block)
+- Eyedropper tool
+- keybinds
 
 ## Future Plans
 - [ ] Add all the tiles and backgrounds when the redesign is complete
