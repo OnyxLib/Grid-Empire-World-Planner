@@ -244,6 +244,7 @@
 
     <script>
         const COLS = 100, ROWS = 60, TILE_SIZE = 32;
+        const STORAGE_KEY = 'gridEmpire_cachedMap'; // Key for website cache
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
         const viewport = document.querySelector('.viewport');
@@ -261,14 +262,21 @@
         let lastY = null;
         let isInfoVisible = false; // Renamed from showInfo to avoid collision with function name
         const imgCache = {};
+        let saveTimeout = null; // For debouncing cache saves
 
         // Selection State
         let selectionRect = null; // {x1, y1, x2, y2}
         let isSelecting = false;
         let clipboard = null; // { tiles: [], originX, originY }
 
-        //import tiles, add beckrock after it finishes
-        loadSpritesheet().then(data => { addBedrockLayers(); updateTransform(); });
+        // Start initialization: load tiles, then check cache, else add bedrock
+        loadSpritesheet().then(data => {
+            const hasCache = loadFromCache();
+            if (!hasCache) {
+                addBedrockLayers();
+            }
+            updateTransform();
+        });
 
         // Setup Background Image
         let bgImage = new Image();
@@ -288,7 +296,44 @@
         //starting popup
         showWebsiteInfo();
 
-        // start of functions:
+        /**
+         * --- Cache Logic ---
+         * Persists mapData to LocalStorage. 
+         * Includes a debounce to prevent performance lag during active painting.
+         */
+        function saveToCache() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(mapData));
+                } catch (e) {
+                    console.warn("Storage limit exceeded. Custom tiles (DataURLs) may be too large for browser cache.");
+                }
+            }, 1000); // Wait for 1 second of inactivity before saving
+        }
+
+        /**
+         * Restores mapData from LocalStorage.
+         */
+        function loadFromCache() {
+            const cached = localStorage.getItem(STORAGE_KEY);
+            if (cached) {
+                try {
+                    const parsed = JSON.parse(cached);
+                    if (parsed.background && parsed.foreground) {
+                        mapData = parsed;
+                        draw();
+                        return true;
+                    }
+                } catch (e) {
+                    console.error("Failed to parse cached map data.");
+                }
+            }
+            return false;
+        }
+
+        // --- Core Rendering ---
+
         async function loadSpritesheet() {
             try {
                 const response = await fetch('spritesheet.json');
@@ -419,6 +464,7 @@
             history.push(JSON.stringify(mapData));
             if (history.length > 30) history.shift();
             redoStack = [];
+            saveToCache(); // Update website cache on every state change
         }
 
         function undo() {
@@ -426,6 +472,7 @@
                 redoStack.push(JSON.stringify(mapData));
                 mapData = JSON.parse(history.pop());
                 draw();
+                saveToCache();
             }
         }
 
@@ -434,6 +481,7 @@
                 history.push(JSON.stringify(mapData));
                 mapData = JSON.parse(redoStack.pop());
                 draw();
+                saveToCache();
             }
         }
 
@@ -464,6 +512,7 @@
                 layer[key] = { src: selectedTileData, rotation, flipped };
                 queue.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
             }
+            saveToCache(); // Ensure bucket fills are cached
         }
 
         function handleInput(e) {
@@ -578,6 +627,7 @@
             isSelecting = false;
             lastX = null;
             lastY = null;
+            saveToCache(); // Final save on mouse release
         }
 
         function placeBrush(startX, startY, layer, buttons) {
@@ -650,6 +700,7 @@
                 }
             });
             draw();
+            saveToCache();
         }
 
         window.addEventListener('keydown', e => {
@@ -781,6 +832,7 @@
                         saveState();
                         mapData = importedData;
                         draw();
+                        saveToCache(); // Cache the imported file
                     } else {
                         alert("Invalid map file format.");
                     }
@@ -852,8 +904,14 @@
             document.getElementById("myForm").style.display = (isInfoVisible) ? "block" : "none";
         }
 
-        //addbedrocklayer has the draw() function. No need to call it again.
-        function clearMap() { if (confirm("Clear?")) { saveState(); mapData = { background: {}, foreground: {} }; addBedrockLayers(); } }
+        function clearMap() {
+            if (confirm("Clear?")) {
+                saveState();
+                mapData = { background: {}, foreground: {} };
+                addBedrockLayers();
+                saveToCache(); // Update cache after clear
+            }
+        }
 
         function saveAsPNG() {
             const a = document.createElement('a'); a.download = 'world_render.png';
@@ -922,6 +980,7 @@
                 }
             }
             draw();
+            saveToCache();
             console.log("Added 3 layers of Bedrock to the bottom.");
         }
 
@@ -942,8 +1001,8 @@
 
         function showWebsiteInfo() {
             displayPopUp(
-                "Latest Features: \n most keybinds, \n better pan and zoom \n\n If you have suggestions, \n dm me in discord!",
-                "Version 1.5",
+                "Latest Features: \n website cache, \n some more blocks \n\n If you have suggestions, \n dm me in discord!",
+                "Version 1.6",
                 "Website by: Onyx"
             );
         }
