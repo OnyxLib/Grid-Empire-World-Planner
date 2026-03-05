@@ -300,36 +300,99 @@
          * --- Cache Logic ---
          * Persists mapData to LocalStorage. 
          * Includes a debounce to prevent performance lag during active painting.
+         * Uses a Tokenized Manifest to deduplicate image strings.
          */
+
         function saveToCache() {
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(() => {
                 try {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(mapData));
+                    // 1. Build a manifest of unique tile sources
+                    const manifest = [];
+                    const srcToId = {};
+
+                    const getTileId = (src) => {
+                        if (srcToId[src] === undefined) {
+                            srcToId[src] = manifest.length;
+                            manifest.push(src);
+                        }
+                        return srcToId[src];
+                    };
+
+                    // 2. Compress the map layers using IDs instead of full strings
+                    const compressLayer = (layer) => {
+                        const compressed = {};
+                        for (let coord in layer) {
+                            const tile = layer[coord];
+                            compressed[coord] = {
+                                i: getTileId(tile.src), // 'i' for index
+                                r: tile.rotation,      // 'r' for rotation
+                                f: tile.flipped ? 1 : 0 // 'f' for flipped (using 1/0 for space)
+                            };
+                        }
+                        return compressed;
+                    };
+
+                    const payload = {
+                        v: 2, // Versioning for future migrations
+                        m: manifest,
+                        bg: compressLayer(mapData.background),
+                        fg: compressLayer(mapData.foreground)
+                    };
+
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+                    console.log(`Cache optimized: ${manifest.length} unique tiles stored.`);
                 } catch (e) {
-                    console.warn("Storage limit exceeded. Custom tiles (DataURLs) may be too large for browser cache.");
+                    console.warn("Storage limit still exceeded. Consider clearing unused custom blocks.");
                 }
-            }, 1000); // Wait for 1 second of inactivity before saving
+            }, 1000);
         }
 
         /**
-         * Restores mapData from LocalStorage.
+         * Restores and decompress mapData from LocalStorage.
          */
         function loadFromCache() {
             const cached = localStorage.getItem(STORAGE_KEY);
-            if (cached) {
-                try {
-                    const parsed = JSON.parse(cached);
+            if (!cached) return false;
+
+            try {
+                const parsed = JSON.parse(cached);
+
+                // Handle legacy format (Version 1) if it exists
+                if (!parsed.v || parsed.v < 2) {
                     if (parsed.background && parsed.foreground) {
                         mapData = parsed;
-                        draw();
                         return true;
                     }
-                } catch (e) {
-                    console.error("Failed to parse cached map data.");
+                    return false;
                 }
+
+                // Handle Optimized Format (Version 2)
+                const manifest = parsed.m;
+                const decompressLayer = (compressed) => {
+                    const layer = {};
+                    for (let coord in compressed) {
+                        const tile = compressed[coord];
+                        layer[coord] = {
+                            src: manifest[tile.i],
+                            rotation: tile.r,
+                            flipped: tile.f === 1
+                        };
+                    }
+                    return layer;
+                };
+
+                mapData = {
+                    background: decompressLayer(parsed.bg),
+                    foreground: decompressLayer(parsed.fg)
+                };
+
+                draw();
+                return true;
+            } catch (e) {
+                console.error("Failed to parse cached map data:", e);
+                return false;
             }
-            return false;
         }
 
         // --- Core Rendering ---
