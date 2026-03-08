@@ -243,7 +243,7 @@
     </main>
 
     <script>
-        const COLS = 100, ROWS = 60, TILE_SIZE = 32;
+        const COLS = 100, ROWS = 60, TILE_SIZE = 34;
         const STORAGE_KEY = 'gridEmpire_cachedMap'; // Key for website cache
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
@@ -270,7 +270,7 @@
         let clipboard = null; // { tiles: [], originX, originY }
 
         // Start initialization: load tiles, then check cache, else add bedrock
-        loadSpritesheet().then(data => {
+        loadSpritesheets().then(() => {
             const hasCache = loadFromCache();
             if (!hasCache) {
                 addBedrockLayers();
@@ -397,54 +397,61 @@
 
         // --- Core Rendering ---
 
-        async function loadSpritesheet() {
-            try {
-                const response = await fetch('spritesheet.json');
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const data = await response.json();
+        /**
+         * Iteratively loads spritesheet1.json, spritesheet2.json, etc.
+         * Stops when a fetch returns a non-OK status.
+         */
+        async function loadSpritesheets() {
+            const palette = document.getElementById('tilePalette');
+            palette.innerHTML = ''; // Clear once before starting the multi-load
 
-                const spriteImg = new Image();
-                spriteImg.crossOrigin = "anonymous";
-                spriteImg.src = data.meta.image || 'spritesheet.png';
+            let index = 1;
+            let totalTiles = 0;
 
-                // Use decode() to ensure the image is fully ready for slicing
+            while (true) {
                 try {
+                    const response = await fetch(`spritesheet${index}.json`);
+                    if (!response.ok) break; // Exit loop if file doesn't exist (e.g. 404)
+
+                    const data = await response.json();
+                    const spriteImg = new Image();
+                    spriteImg.crossOrigin = "anonymous";
+                    spriteImg.src = data.meta.image || `spritesheet${index}.png`;
+
                     await spriteImg.decode();
-                } catch (e) {
-                    throw new Error("Master spritesheet image could not be decoded. Ensure 'spritesheet.png' is correct.");
+
+                    const tempCanvas = document.createElement('canvas');
+                    const tCtx = tempCanvas.getContext('2d');
+                    const frames = Object.entries(data.frames).sort((a, b) => a[1].index - b[1].index);
+
+                    frames.forEach(([name, info]) => {
+                        const { x, y, w, h } = info.frame;
+                        if (w === 0 || h === 0) return;
+
+                        tempCanvas.width = w;
+                        tempCanvas.height = h;
+                        tCtx.clearRect(0, 0, w, h);
+                        tCtx.drawImage(spriteImg, x, y, w, h, 0, 0, w, h);
+
+                        const dataUrl = tempCanvas.toDataURL();
+                        const img = document.createElement('img');
+                        img.src = dataUrl;
+                        img.title = name;
+                        img.onclick = () => selectTile(img.src, img);
+                        palette.appendChild(img);
+                        totalTiles++;
+                    });
+
+                    console.log(`Imported sheet ${index}: ${frames.length} tiles.`);
+                    index++;
+                } catch (err) {
+                    console.warn(`Stopped loading at index ${index}:`, err.message);
+                    break;
                 }
-
-                const palette = document.getElementById('tilePalette');
-                palette.innerHTML = '';
-
-                const tempCanvas = document.createElement('canvas');
-                const tCtx = tempCanvas.getContext('2d');
-
-                const frames = Object.entries(data.frames).sort((a, b) => a[1].index - b[1].index);
-
-                frames.forEach(([name, info]) => {
-                    const { x, y, w, h } = info.frame;
-                    if (w === 0 || h === 0) return;
-
-                    tempCanvas.width = w;
-                    tempCanvas.height = h;
-                    tCtx.clearRect(0, 0, w, h);
-                    tCtx.drawImage(spriteImg, x, y, w, h, 0, 0, w, h);
-
-                    const dataUrl = tempCanvas.toDataURL();
-                    const img = document.createElement('img');
-                    img.src = dataUrl;
-                    img.title = name;
-                    img.onclick = () => selectTile(img.src, img);
-                    palette.appendChild(img);
-                });
-
-                console.log(`Successfully imported ${frames.length} tiles.`);
-                draw();
-                return data;
-            } catch (err) {
-                console.error("Failed to load spritesheet:", err);
             }
+
+            console.log(`Total blocks loaded across all sheets: ${totalTiles}`);
+            draw();
         }
 
         function selectTile(src, el) {
@@ -582,7 +589,6 @@
             const vRect = viewport.getBoundingClientRect();
 
             // Calculate coordinates relative to the transformed canvas
-            // We find the center of the viewport, account for current pan, then scale back to local space
             const centerX = vRect.width / 2;
             const centerY = vRect.height / 2;
 
@@ -743,15 +749,11 @@
         function pasteSelection() {
             if (!clipboard) return;
 
-            // Use the current mouse position as the anchor for pasting
-            // Since we don't have mouse coords in the key event, we track them in coordDisplay logic or just use lastX/Y
-            // Best practice: paste relative to where the "Tile Position" currently is.
             const text = coordDisplay.innerText;
             const match = text.match(/\((\d+),\s+(\d+)\)/);
             if (!match) return;
 
             const targetX = parseInt(match[1]);
-            // Convert displayY back to internal Y
             const targetY = (ROWS - 1) - parseInt(match[2]);
 
             saveState();
@@ -767,68 +769,40 @@
         }
 
         window.addEventListener('keydown', e => {
-            // 1. Early exit if the user is typing in a form element
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                return;
-            }
-
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             const key = e.key.toLowerCase();
 
-            // Handle Ctrl/Cmd Shortcuts (Modifiers)
             if (e.ctrlKey || e.metaKey) {
                 switch (key) {
                     case 'z':
                         e.preventDefault();
-                        // If Shift is also held, it's a Redo
-                        if (e.shiftKey) {
-                            redo();
-                        } else {
-                            undo();
-                        }
+                        if (e.shiftKey) redo(); else undo();
                         break;
                     case 'c':
-                        e.preventDefault();
-                        copySelection();
-                        break;
+                        e.preventDefault(); copySelection(); break;
                     case 'v':
-                        e.preventDefault();
-                        pasteSelection();
-                        break;
+                        e.preventDefault(); pasteSelection(); break;
                     case 'b':
                         exportTileList(); break;
                 }
                 return;
             }
 
-            // Handle Single-Key Shortcuts (No Modifiers)
             if (!e.ctrlKey && !e.metaKey && !e.altKey) {
                 switch (key) {
-                    case 'g':
-                        toggleGrid(); break;
-                    case 'r':
-                        rotateTile(); break;
-                    case 'm':
-                        flipTile(); break;
-                    case 'b':
-                        setTool('brush'); break;
-                    case 's':
-                        setTool('select'); break;
-                    case 'p':
-                        setTool('pan'); break;
-                    case 'f':
-                        setTool('bucket'); break;
-                    case 'l':
-                        toggleLayer(); break;
-                    case 'c':
-                        clearMap(); break;
-                    case 'd':
-                        addBedrockLayers(); break;
-                    case 'i':
-                        saveAsPNG(); break;
-                    case 'w':
-                        showWebsiteInfo(); break;
-                    case 'k':
-                        showKeybind(); break;
+                    case 'g': toggleGrid(); break;
+                    case 'r': rotateTile(); break;
+                    case 'm': flipTile(); break;
+                    case 'b': setTool('brush'); break;
+                    case 's': setTool('select'); break;
+                    case 'p': setTool('pan'); break;
+                    case 'f': setTool('bucket'); break;
+                    case 'l': toggleLayer(); break;
+                    case 'c': clearMap(); break;
+                    case 'd': addBedrockLayers(); break;
+                    case 'i': saveAsPNG(); break;
+                    case 'w': showWebsiteInfo(); break;
+                    case 'k': showKeybind(); break;
                 }
             }
         });
@@ -895,7 +869,7 @@
                         saveState();
                         mapData = importedData;
                         draw();
-                        saveToCache(); // Cache the imported file
+                        saveToCache();
                     } else {
                         alert("Invalid map file format.");
                     }
@@ -911,28 +885,18 @@
         function changeZoom(delta, e) {
             const oldZoom = zoom;
             zoom = Math.min(Math.max(0.4, zoom + delta), 10);
-
-            // If a mouse event is provided, calculate pan adjustment for zoom-to-cursor
             if (e) {
                 const vRect = viewport.getBoundingClientRect();
-
-                // Get mouse position relative to the center of the viewport 
-                // (Matches how updateTransform applies translation)
                 const mouseX = e.clientX - (vRect.left + vRect.width / 2);
                 const mouseY = e.clientY - (vRect.top + vRect.height / 2);
-
                 const ratio = zoom / oldZoom;
-
-                // Adjust pan so the world-point under the cursor remains under the cursor
                 panX = mouseX - (mouseX - panX) * ratio;
                 panY = mouseY - (mouseY - panY) * ratio;
             }
-
             updateTransform();
         }
 
         function updateTransform() {
-            // Center the canvas in the viewport and apply pan/zoom
             canvas.style.transform = `translate3d(${panX}px, ${panY}px, 0) scale(${zoom})`;
         }
 
@@ -961,7 +925,6 @@
             draw();
         }
 
-        // --- Info Logic ---
         function showInfo() {
             isInfoVisible = !isInfoVisible;
             document.getElementById("myForm").style.display = (isInfoVisible) ? "block" : "none";
@@ -972,7 +935,7 @@
                 saveState();
                 mapData = { background: {}, foreground: {} };
                 addBedrockLayers();
-                saveToCache(); // Update cache after clear
+                saveToCache();
             }
         }
 
@@ -1019,7 +982,6 @@
             const paletteItems = document.querySelectorAll('#tilePalette img');
             let bedrockSrc = null;
 
-            // Search for a tile with the title "Bedrock" (case insensitive)
             paletteItems.forEach(img => {
                 if (img.title.toLowerCase() === 'bedrock') {
                     bedrockSrc = img.src;
@@ -1032,7 +994,6 @@
                 return;
             }
 
-            // Fill the bottom 3 rows (57, 58, 59 in a 60-row grid)
             for (let x = 0; x < COLS; x++) {
                 for (let y = ROWS - 3; y < ROWS; y++) {
                     mapData.foreground[`${x},${y}`] = {
@@ -1054,7 +1015,6 @@
             showInfo();
         }
 
-        //improve this lmao
         function showKeybind() {
             displayPopUp(
                 "Draw: Left Click \n Erase: Right Click \n Zoom: Scroll Wheel \n Eyedropper: Alt + Left Click \n Undo: Ctrl + z \n Redo: Ctrl + Shift + z \n Copy: Ctrl + c \n Paste: Ctrl + v \n Export Block List: Ctrl + b \n brush: b \n Select: s \n Pan: p \n Fill: f \n Rotate: r \n Mirror: m \n Toggle Grid: g \n Toggle Layer: l \n Clear World: c \n Add Bedrock Layer: d \n Save World Image: i \n Info: w \n Keybind: k",
@@ -1064,8 +1024,8 @@
 
         function showWebsiteInfo() {
             displayPopUp(
-                "Latest Features: \n website cache, \n some more blocks \n\n If you have suggestions, \n dm me in discord!",
-                "Version 1.6",
+                "Latest Features: \n multiple spritesheet support, \n ALOT of blocks \n\n If you have suggestions, \n dm me in discord!",
+                "Version 1.7",
                 "Website by: Onyx"
             );
         }
