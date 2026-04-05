@@ -257,9 +257,11 @@
         let currentLayer = "foreground";
         let tool = 'pan';
         let zoom = 1.00, rotation = 0, flipped = false, showGrid = true;
+        let isGKeyPressed = false, hasScrolledWithG = false, gridParts = 0; maxDivision = 20;
         let panX = 0, panY = 0;
         let lastX = null;
         let lastY = null;
+        let currentMouseX = 0, currentMouseY = 0; // Tracked for ghost preview
         let isInfoVisible = false; // Renamed from showInfo to avoid collision with function name
         const imgCache = {};
         let saveTimeout = null; // For debouncing cache saves
@@ -267,7 +269,8 @@
         // Selection State
         let selectionRect = null; // {x1, y1, x2, y2}
         let isSelecting = false;
-        let clipboard = null; // { tiles: [], originX, originY }
+        let clipboard = null; // { tiles: [], originX, originY, width, height }
+        let showPastePreview = false; // Visibility flag for ghost image
 
         // Start initialization: load tiles, then check cache, else add bedrock
         loadSpritesheets().then(() => {
@@ -472,12 +475,46 @@
             renderLayer(mapData.background);
             renderLayer(mapData.foreground);
 
+            // Render Ghost Selection if active
+            if (tool === 'select' && showPastePreview && clipboard) {
+                renderGhostSelection();
+            }
+
             if (showGrid) {
-                ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+                ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
                 ctx.setLineDash([]);
                 ctx.beginPath();
-                for (let i = 0; i <= COLS; i++) { ctx.moveTo(i * TILE_SIZE, 0); ctx.lineTo(i * TILE_SIZE, canvas.height); }
-                for (let j = 0; j <= ROWS; j++) { ctx.moveTo(0, j * TILE_SIZE); ctx.lineTo(canvas.width, j * TILE_SIZE); }
+
+                if (gridParts === 0) {
+                    for (let i = 0; i <= COLS; i++) { ctx.moveTo(i * TILE_SIZE, 0); ctx.lineTo(i * TILE_SIZE, canvas.height); }
+                    for (let j = 0; j <= ROWS; j++) { ctx.moveTo(0, j * TILE_SIZE); ctx.lineTo(canvas.width, j * TILE_SIZE); }
+                } else {
+                    // Outer border
+                    ctx.moveTo(0, 0); ctx.lineTo(0, canvas.height);
+                    ctx.moveTo(canvas.width, 0); ctx.lineTo(canvas.width, canvas.height);
+                    ctx.moveTo(0, 0); ctx.lineTo(canvas.width, 0);
+                    ctx.moveTo(0, canvas.height); ctx.lineTo(canvas.width, canvas.height);
+
+                    const drawnX = new Set();
+                    const drawnY = new Set();
+
+                    // Inner lines
+                    for (let i = 1; i < gridParts; i++) {
+                        const tileX = Math.round((COLS * i) / gridParts);
+                        if (tileX > 0 && tileX < COLS && !drawnX.has(tileX)) {
+                            drawnX.add(tileX);
+                            ctx.moveTo(tileX * TILE_SIZE, 0);
+                            ctx.lineTo(tileX * TILE_SIZE, canvas.height);
+                        }
+
+                        const tileY = Math.round((ROWS * i) / gridParts);
+                        if (tileY > 0 && tileY < ROWS && !drawnY.has(tileY)) {
+                            drawnY.add(tileY);
+                            ctx.moveTo(0, tileY * TILE_SIZE);
+                            ctx.lineTo(canvas.width, tileY * TILE_SIZE);
+                        }
+                    }
+                }
                 ctx.stroke();
             }
 
@@ -529,6 +566,46 @@
             }
         }
 
+        /**
+         * Renders a translucent preview of the clipboard content centered on the cursor.
+         */
+        async function renderGhostSelection() {
+            if (!clipboard) return;
+
+            const centerOffsetX = Math.floor(clipboard.width / 2);
+            const centerOffsetY = Math.floor(clipboard.height / 2);
+
+            ctx.save();
+            ctx.globalAlpha = 0.5;
+
+            for (const tile of clipboard.tiles) {
+                if (!tile.data) continue;
+
+                const targetX = currentMouseX + tile.offsetX - centerOffsetX;
+                const targetY = currentMouseY + tile.offsetY - centerOffsetY;
+
+                // Bounds check for rendering performance
+                if (targetX < 0 || targetX >= COLS || targetY < 0 || targetY >= ROWS) continue;
+
+                if (!imgCache[tile.data.src]) {
+                    const img = new Image();
+                    img.src = tile.data.src;
+                    imgCache[tile.data.src] = img;
+                }
+
+                const cachedImg = imgCache[tile.data.src];
+                if (cachedImg && cachedImg.complete && cachedImg.naturalWidth > 0) {
+                    ctx.save();
+                    ctx.translate(targetX * TILE_SIZE + TILE_SIZE / 2, targetY * TILE_SIZE + TILE_SIZE / 2);
+                    ctx.rotate((tile.data.rotation * Math.PI) / 180);
+                    ctx.scale(tile.data.flipped ? -1 : 1, 1);
+                    ctx.drawImage(cachedImg, -TILE_SIZE / 2, -TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
+                    ctx.restore();
+                }
+            }
+            ctx.restore();
+        }
+
         // --- Features ---
         function saveState() {
             history.push(JSON.stringify(mapData));
@@ -557,6 +634,9 @@
 
         function setTool(t) {
             tool = t;
+            // Feature: Reset paste preview when switching tools or re-selecting Select tool
+            showPastePreview = false;
+
             document.getElementById('btnBrush').classList.toggle('active', t === 'brush');
             document.getElementById('btnBucket').classList.toggle('active', t === 'bucket');
             document.getElementById('btnPan').classList.toggle('active', t === 'pan');
@@ -597,6 +677,10 @@
 
             const mouseX = Math.floor(localX / TILE_SIZE);
             const mouseY = Math.floor(localY / TILE_SIZE);
+
+            // Update globals for coordinates and ghost rendering
+            currentMouseX = mouseX;
+            currentMouseY = mouseY;
 
             if (mouseX >= 0 && mouseX < COLS && mouseY >= 0 && mouseY < ROWS) {
                 const displayY = (ROWS - 1) - mouseY;
@@ -646,10 +730,13 @@
                 if (e.type === 'mousedown' && e.buttons === 1) {
                     isSelecting = true;
                     selectionRect = { x1: mouseX, y1: mouseY, x2: mouseX, y2: mouseY };
+                    showPastePreview = false; // Hide ghost when starting new selection
                 } else if (isSelecting && e.type === 'mousemove') {
                     selectionRect.x2 = mouseX;
                     selectionRect.y2 = mouseY;
                     draw();
+                } else if (e.type === 'mousemove' && showPastePreview) {
+                    draw(); // Redraw to update ghost position
                 }
                 return;
             }
@@ -701,10 +788,13 @@
 
         function placeBrush(startX, startY, layer, buttons) {
             const size = parseInt(document.getElementById('brushSize').value);
+            // Feature: Centered Brush logic
+            const offset = Math.floor(size / 2);
+
             for (let i = 0; i < size; i++) {
                 for (let j = 0; j < size; j++) {
-                    const x = startX + i;
-                    const y = startY + j;
+                    const x = startX + i - offset;
+                    const y = startY + j - offset;
                     if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
                         if (buttons === 1 && selectedTileData) {
                             mapData[layer][`${x},${y}`] = { src: selectedTileData, rotation, flipped };
@@ -724,44 +814,50 @@
             const yMin = Math.min(selectionRect.y1, selectionRect.y2);
             const yMax = Math.max(selectionRect.y1, selectionRect.y2);
 
+            const width = xMax - xMin + 1;
+            const height = yMax - yMin + 1;
+
             const tiles = [];
             const layer = mapData[currentLayer];
 
             for (let x = xMin; x <= xMax; x++) {
                 for (let y = yMin; y <= yMax; y++) {
                     const key = `${x},${y}`;
-                    if (layer[key]) {
-                        tiles.push({
-                            offsetX: x - xMin,
-                            offsetY: y - yMin,
-                            data: { ...layer[key] }
-                        });
-                    }
+                    // Feature: Always push the state, even if empty (null)
+                    tiles.push({
+                        offsetX: x - xMin,
+                        offsetY: y - yMin,
+                        data: layer[key] ? { ...layer[key] } : null
+                    });
                 }
             }
 
             if (tiles.length > 0) {
-                clipboard = { tiles, originX: xMin, originY: yMin };
+                clipboard = { tiles, originX: xMin, originY: yMin, width, height };
+                showPastePreview = true;
                 console.log(`Copied ${tiles.length} tiles.`);
+                draw();
             }
         }
 
         function pasteSelection() {
             if (!clipboard) return;
 
-            const text = coordDisplay.innerText;
-            const match = text.match(/\((\d+),\s+(\d+)\)/);
-            if (!match) return;
-
-            const targetX = parseInt(match[1]);
-            const targetY = (ROWS - 1) - parseInt(match[2]);
+            // Calculate centering based on clipboard dimensions
+            const targetX = currentMouseX - Math.floor(clipboard.width / 2);
+            const targetY = currentMouseY - Math.floor(clipboard.height / 2);
 
             saveState();
             clipboard.tiles.forEach(tile => {
                 const px = targetX + tile.offsetX;
                 const py = targetY + tile.offsetY;
                 if (px >= 0 && px < COLS && py >= 0 && py < ROWS) {
-                    mapData[currentLayer][`${px},${py}`] = { ...tile.data };
+                    if (tile.data) {
+                        mapData[currentLayer][`${px},${py}`] = { ...tile.data };
+                    } else {
+                        // Feature: Clear existing tile if pasted space is empty
+                        delete mapData[currentLayer][`${px},${py}`];
+                    }
                 }
             });
             draw();
@@ -771,6 +867,11 @@
         window.addEventListener('keydown', e => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             const key = e.key.toLowerCase();
+
+            if (key === 'g' && !e.repeat) {
+                isGKeyPressed = true;
+                hasScrolledWithG = false;
+            }
 
             if (e.ctrlKey || e.metaKey) {
                 switch (key) {
@@ -790,7 +891,6 @@
 
             if (!e.ctrlKey && !e.metaKey && !e.altKey) {
                 switch (key) {
-                    case 'g': toggleGrid(); break;
                     case 'r': rotateTile(); break;
                     case 'm': flipTile(); break;
                     case 'b': setTool('brush'); break;
@@ -807,8 +907,43 @@
             }
         });
 
+        window.addEventListener('keyup', e => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            const key = e.key.toLowerCase();
+
+            if (key === 'g') {
+                isGKeyPressed = false;
+                if (!hasScrolledWithG) {
+                    toggleGrid();
+                }
+            }
+        });
+
         viewport.addEventListener('wheel', (e) => {
             e.preventDefault();
+
+            if (isGKeyPressed) {
+                hasScrolledWithG = true;
+                if (!showGrid) showGrid = true;
+
+                if (e.deltaY < 0) { // scroll forward/up
+                    if (gridParts !== 0) {
+                        gridParts++;
+                        if (gridParts >= maxDivision) {
+                            gridParts = 0; // Reached max, fully divided
+                        }
+                    }
+                } else { // scroll backward/down
+                    if (gridParts === 0) {
+                        gridParts = maxDivision - 1;
+                    } else if (gridParts > 2) {
+                        gridParts--;
+                    }
+                }
+                draw();
+                return;
+            }
+
             const delta = e.deltaY > 0 ? -0.2 : 0.2;
             changeZoom(delta, e);
         }, { passive: false });
@@ -880,7 +1015,11 @@
             reader.readAsText(file);
         };
 
-        function toggleGrid() { showGrid = !showGrid; draw(); }
+        function toggleGrid() {
+            showGrid = !showGrid;
+            gridParts = 0;
+            draw();
+        }
 
         function changeZoom(delta, e) {
             const oldZoom = zoom;
@@ -911,7 +1050,7 @@
         }
 
         function toggleLayer() {
-            layerGE = "Block"
+            let layerGE = "Block"
             if (currentLayer == "foreground") {
                 currentLayer = "background"
                 layerGE = "BG"
@@ -1017,15 +1156,15 @@
 
         function showKeybind() {
             displayPopUp(
-                "Draw: Left Click \n Erase: Right Click \n Zoom: Scroll Wheel \n Eyedropper: Alt + Left Click \n Undo: Ctrl + z \n Redo: Ctrl + Shift + z \n Copy: Ctrl + c \n Paste: Ctrl + v \n Export Block List: Ctrl + b \n brush: b \n Select: s \n Pan: p \n Fill: f \n Rotate: r \n Mirror: m \n Toggle Grid: g \n Toggle Layer: l \n Clear World: c \n Add Bedrock Layer: d \n Save World Image: i \n Info: w \n Keybind: k",
+                "Draw: Left Click \n Erase: Right Click \n Zoom: Scroll Wheel \n Eyedropper: Alt + Left Click \n Undo: Ctrl + z \n Redo: Ctrl + Shift + z \n Copy: Ctrl + c \n Paste: Ctrl + v \n Export Block List: Ctrl + b \n brush: b \n Select: s \n Pan: p \n Fill: f \n Rotate: r \n Mirror: m \n Toggle Grid: g \n Adjust Grid: hold g and scroll \n Toggle Layer: l \n Clear World: c \n Add Bedrock Layer: d \n Save World Image: i \n Info: w \n Keybind: k",
                 "Keybinds:",
             );
         }
 
         function showWebsiteInfo() {
             displayPopUp(
-                "Latest Features: \n multiple spritesheet support, \n ALOT of blocks \n\n If you have suggestions, \n dm me in discord!",
-                "Version 1.7",
+                "Latest Features: \n adjusting grid division, \n copy paste visuals \n\n If you have suggestions, \n dm me in discord!",
+                "Version 1.8",
                 "Website by: Onyx"
             );
         }
