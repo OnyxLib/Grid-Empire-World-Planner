@@ -30,7 +30,7 @@ Disclaimer: AI was used in the making of this application.
 - search, rotate, mirror tiles
 - 1x1 to 5x5 brush sizes
 - fill, select tool
-- copy and paste
+- copy, cut, and paste
 - toggle grid and layers
 - undo, redo
 - clear map
@@ -43,6 +43,6 @@ Disclaimer: AI was used in the making of this application.
 ## Future Plans
 - [ ] Add all the tiles and backgrounds when the redesign is complete
 - [ ] Implement autotiling 
-- [ ] Add another layer for water logged blocks
-- [ ] Add shadows
+- [x] Add another layer for water logged blocks
+- [x] Add shadows
 - [x] Make a website to run this world planner
