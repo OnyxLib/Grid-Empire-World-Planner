@@ -244,14 +244,17 @@
 
     <script>
         const COLS = 100, ROWS = 60, TILE_SIZE = 34;
+        const SHADOW_OFFSET = 9; // Southeast shadow offset distance
         const STORAGE_KEY = 'gridEmpire_cachedMap'; // Key for website cache
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
         const viewport = document.querySelector('.viewport');
         const coordDisplay = document.getElementById('coordDisplay');
+        const shadowCanvas = document.createElement('canvas');
+        const shadowCtx = shadowCanvas.getContext('2d');
 
         // State
-        let mapData = { background: {}, foreground: {} };
+        let mapData = { background: {}, foreground: {}, water: {} }; // Added 'water' layer
         let history = [], redoStack = [];
         let selectedTileData = null;
         let currentLayer = "foreground";
@@ -325,6 +328,7 @@
                     // 2. Compress the map layers using IDs instead of full strings
                     const compressLayer = (layer) => {
                         const compressed = {};
+                        if (!layer) return compressed;
                         for (let coord in layer) {
                             const tile = layer[coord];
                             compressed[coord] = {
@@ -340,7 +344,8 @@
                         v: 2, // Versioning for future migrations
                         m: manifest,
                         bg: compressLayer(mapData.background),
-                        fg: compressLayer(mapData.foreground)
+                        fg: compressLayer(mapData.foreground),
+                        wt: compressLayer(mapData.water) // New water layer key
                     };
 
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -364,16 +369,19 @@
                 // Handle legacy format (Version 1) if it exists
                 if (!parsed.v || parsed.v < 2) {
                     if (parsed.background && parsed.foreground) {
-                        mapData = parsed;
+                        mapData = {
+                            background: parsed.background,
+                            foreground: parsed.foreground,
+                            water: parsed.water || {}
+                        };
                         return true;
                     }
                     return false;
                 }
-
-                // Handle Optimized Format (Version 2)
                 const manifest = parsed.m;
                 const decompressLayer = (compressed) => {
                     const layer = {};
+                    if (!compressed) return layer;
                     for (let coord in compressed) {
                         const tile = compressed[coord];
                         layer[coord] = {
@@ -387,7 +395,8 @@
 
                 mapData = {
                     background: decompressLayer(parsed.bg),
-                    foreground: decompressLayer(parsed.fg)
+                    foreground: decompressLayer(parsed.fg),
+                    water: decompressLayer(parsed.wt) // Decompress water layer
                 };
 
                 draw();
@@ -472,8 +481,11 @@
                 ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
             }
 
+            //render layering, top most here is most bottom
             renderLayer(mapData.background);
+            renderShadowLayer(mapData.foreground);
             renderLayer(mapData.foreground);
+            renderLayer(mapData.water); // Water renders above foreground
 
             // Render Ghost Selection if active
             if (tool === 'select' && showPastePreview && clipboard) {
@@ -526,7 +538,7 @@
                 const h = (Math.abs(selectionRect.y2 - selectionRect.y1) + 1) * TILE_SIZE;
 
                 ctx.strokeStyle = '#3b82f6';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 1;
                 ctx.setLineDash([5, 5]);
                 ctx.strokeRect(x, y, w, h);
                 ctx.fillStyle = 'rgba(59, 130, 246, 0.2)';
@@ -535,7 +547,52 @@
             }
         }
 
+        /**
+         * Renders the silhouette of foreground tiles onto a buffer, 
+         * then draws the buffer with 50% opacity to prevent darkening overlaps.
+         */
+        function renderShadowLayer(layer) {
+            if (!layer || Object.keys(layer).length === 0) return;
+
+            shadowCanvas.width = COLS * TILE_SIZE;
+            shadowCanvas.height = ROWS * TILE_SIZE;
+            shadowCtx.clearRect(0, 0, shadowCanvas.width, shadowCanvas.height);
+
+            // 1. Draw tile silhouettes with SE offset
+            for (let coord in layer) {
+                const [x, y] = coord.split(',').map(Number);
+                const tile = layer[coord];
+                const cachedImg = imgCache[tile.src];
+
+                if (!cachedImg || cachedImg.naturalWidth === 0) continue;
+
+                shadowCtx.save();
+                // Apply Southeast offset
+                shadowCtx.translate(
+                    x * TILE_SIZE + TILE_SIZE / 2 + SHADOW_OFFSET,
+                    y * TILE_SIZE + TILE_SIZE / 2 + SHADOW_OFFSET
+                );
+                shadowCtx.rotate((tile.rotation * Math.PI) / 180);
+                shadowCtx.scale(tile.flipped ? -1 : 1, 1);
+                shadowCtx.drawImage(cachedImg, -TILE_SIZE / 2, -TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
+                shadowCtx.restore();
+            }
+
+            // 2. Force silhouettes to solid black
+            shadowCtx.globalCompositeOperation = 'source-in';
+            shadowCtx.fillStyle = 'black';
+            shadowCtx.fillRect(0, 0, shadowCanvas.width, shadowCanvas.height);
+            shadowCtx.globalCompositeOperation = 'source-over';
+
+            // 3. Draw shadow buffer to main canvas with 50% opacity
+            ctx.save();
+            ctx.globalAlpha = 0.1;
+            ctx.drawImage(shadowCanvas, 0, 0);
+            ctx.restore();
+        }
+
         async function renderLayer(layer) {
+            if (!layer) return;
             for (let coord in layer) {
                 const [x, y] = coord.split(',').map(Number);
                 const tile = layer[coord];
@@ -840,6 +897,34 @@
             }
         }
 
+        /**
+         * Copies selection to clipboard and removes tiles from the world.
+         */
+        function cutSelection() {
+            if (!selectionRect) return;
+
+            // 1. Copy content first
+            copySelection();
+
+            // 2. Remove the tiles from the layer
+            saveState();
+            const xMin = Math.min(selectionRect.x1, selectionRect.x2);
+            const xMax = Math.max(selectionRect.x1, selectionRect.x2);
+            const yMin = Math.min(selectionRect.y1, selectionRect.y2);
+            const yMax = Math.max(selectionRect.y1, selectionRect.y2);
+
+            const layer = mapData[currentLayer];
+            for (let x = xMin; x <= xMax; x++) {
+                for (let y = yMin; y <= yMax; y++) {
+                    delete layer[`${x},${y}`];
+                }
+            }
+
+            draw();
+            saveToCache();
+            console.log("Cut selection.");
+        }
+
         function pasteSelection() {
             if (!clipboard) return;
 
@@ -881,6 +966,8 @@
                         break;
                     case 'c':
                         e.preventDefault(); copySelection(); break;
+                    case 'x':
+                        e.preventDefault(); cutSelection(); break; // Added Cut functionality
                     case 'v':
                         e.preventDefault(); pasteSelection(); break;
                     case 'b':
@@ -1002,7 +1089,11 @@
                     const importedData = JSON.parse(ev.target.result);
                     if (importedData.background && importedData.foreground) {
                         saveState();
-                        mapData = importedData;
+                        mapData = {
+                            background: importedData.background,
+                            foreground: importedData.foreground,
+                            water: importedData.water || {}
+                        };
                         draw();
                         saveToCache();
                     } else {
@@ -1050,16 +1141,18 @@
         }
 
         function toggleLayer() {
-            let layerGE = "Block"
-            if (currentLayer == "foreground") {
-                currentLayer = "background"
-                layerGE = "BG"
+            let label = "Block";
+            if (currentLayer === "foreground") {
+                currentLayer = "background";
+                label = "BG";
+            } else if (currentLayer === "water") {
+                currentLayer = "foreground";
+                label = "Block";
+            } else {
+                currentLayer = "water";
+                label = "Water";
             }
-            else {
-                currentLayer = "foreground"
-                layerGE = "Block"
-            }
-            document.getElementById('layerSelect').innerText = `${layerGE} Layer`;
+            document.getElementById('layerSelect').innerText = `${label} Layer`;
             selectionRect = null;
             draw();
         }
@@ -1072,7 +1165,7 @@
         function clearMap() {
             if (confirm("Clear?")) {
                 saveState();
-                mapData = { background: {}, foreground: {} };
+                mapData = { background: {}, foreground: {}, water: {} };
                 addBedrockLayers();
                 saveToCache();
             }
@@ -1092,9 +1185,10 @@
                 if (src) nameLookup[src] = item.title;
             });
 
-            const layers = ['background', 'foreground'];
+            const layers = ['background', 'foreground', 'water'];
             layers.forEach(layerName => {
                 const layer = mapData[layerName];
+                if (!layer) return;
                 for (let coord in layer) {
                     const tile = layer[coord];
                     const name = (nameLookup[tile.src] || "Unknown");
@@ -1156,14 +1250,14 @@
 
         function showKeybind() {
             displayPopUp(
-                "Draw: Left Click \n Erase: Right Click \n Zoom: Scroll Wheel \n Eyedropper: Alt + Left Click \n Undo: Ctrl + z \n Redo: Ctrl + Shift + z \n Copy: Ctrl + c \n Paste: Ctrl + v \n Export Block List: Ctrl + b \n brush: b \n Select: s \n Pan: p \n Fill: f \n Rotate: r \n Mirror: m \n Toggle Grid: g \n Adjust Grid: hold g and scroll \n Toggle Layer: l \n Clear World: c \n Add Bedrock Layer: d \n Save World Image: i \n Info: w \n Keybind: k",
+                "Draw: Left Click \n Erase: Right Click \n Zoom: Scroll Wheel \n Eyedropper: Alt + Left Click \n Undo: Ctrl + z \n Redo: Ctrl + Shift + z \n Copy: Ctrl + c \n Cut: Ctrl + x \n Paste: Ctrl + v \n Export Block List: Ctrl + b \n brush: b \n Select: s \n Pan: p \n Fill: f \n Rotate: r \n Mirror: m \n Toggle Grid: g \n Adjust Grid: hold g and scroll \n Toggle Layer: l \n Clear World: c \n Add Bedrock Layer: d \n Save World Image: i \n Info: w \n Keybind: k",
                 "Keybinds:",
             );
         }
 
         function showWebsiteInfo() {
             displayPopUp(
-                "Latest Features: \n adjusting grid division, \n copy paste visuals \n\n If you have suggestions, \n dm me in discord!",
+                "Latest Features: \n adjusting grid division, \n copy visuals, \n cut and paste, \n water layer without water, \n shadows! \n\n If you have suggestions, \n dm me in discord!",
                 "Version 1.8",
                 "Website by: Onyx"
             );
