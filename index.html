@@ -24,6 +24,52 @@
             overflow: hidden;
         }
 
+        /* Loading Screen Styles */
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: opacity 0.5s ease, visibility 0.5s;
+        }
+
+        .loader-container {
+            width: 300px;
+            text-align: center;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 8px;
+            background: #2d2d2d;
+            border-radius: 4px;
+            margin-top: 15px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        #progressBar {
+            width: 0%;
+            height: 100%;
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+            transition: width 0.2s ease;
+        }
+
+        #loadingText {
+            font-size: 0.9rem;
+            color: var(--text-main);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
         /* Sidebar */
         .sidebar {
             width: 320px;
@@ -174,6 +220,15 @@
 
 <body>
 
+    <div id="loadingOverlay">
+        <div class="loader-container">
+            <h2 id="loadingText">Initializing World Planner...</h2>
+            <div class="progress-bar-bg">
+                <div id="progressBar"></div>
+            </div>
+        </div>
+    </div>
+
     <aside class="sidebar">
         <div class="control-group">
             <h4>Tools & Layers</h4>
@@ -272,23 +327,92 @@
         // Selection State
         let selectionRect = null; // {x1, y1, x2, y2}
         let isSelecting = false;
-        let clipboard = null; // { tiles: [], originX, originY, width, height }
-        let showPastePreview = false; // Visibility flag for ghost image
+        let clipboard = null;
+        let showPastePreview = false;
 
-        // Start initialization: load tiles, then check cache, else add bedrock
-        loadSpritesheets().then(() => {
-            const hasCache = loadFromCache();
-            if (!hasCache) {
-                addBedrockLayers();
+        /**
+         * --- App Initialization with Loading Screen ---
+         */
+        async function initApp() {
+            const progressBar = document.getElementById('progressBar');
+            const loadingText = document.getElementById('loadingText');
+
+            try {
+                // 1. Wait for Spritesheets and fill imgCache
+                await loadSpritesheets((progress) => {
+                    progressBar.style.width = `${progress * 0.8}%`; // Reserve 20% for background/cache
+                    loadingText.innerText = `Loading Assets: ${Math.round(progress)}%`;
+                });
+
+                // 2. Load Default Background
+                loadingText.innerText = "Setting Up Environment...";
+                await new Promise((resolve) => {
+                    bgImage.src = 'backgrounds/GE_spring_background.jpg';
+                    bgImage.onload = resolve;
+                    bgImage.onerror = () => {
+                        console.log("Default background not found.");
+                        resolve();
+                    };
+                });
+                progressBar.style.width = '90%';
+
+                // 3. Load from Cache and Populate Map-Specific imgCache
+                loadingText.innerText = "Restoring World Data...";
+                const hasCache = loadFromCache();
+                if (!hasCache) {
+                    addBedrockLayers();
+                }
+
+                // Ensure all tiles in mapData are pre-loaded into imgCache to fix shadow issue
+                await prewarmMapCache();
+
+                progressBar.style.width = '100%';
+
+                // Final render
+                updateTransform();
+                draw();
+
+                // Hide Loading Screen
+                setTimeout(() => {
+                    const overlay = document.getElementById('loadingOverlay');
+                    overlay.style.opacity = '0';
+                    setTimeout(() => overlay.style.display = 'none', 500);
+                    showWebsiteInfo();
+                }, 400);
+
+            } catch (err) {
+                loadingText.innerText = "Error Loading Assets. Please Refresh.";
+                console.error(err);
             }
-            updateTransform();
-        });
+        }
+
+        // Start App
+        initApp();
+
+        /**
+         * Ensures every tile currently in the map is decoded and in the imgCache
+         * before the first render. This fixes the "missing shadows/tiles" on start.
+         */
+        async function prewarmMapCache() {
+            const promises = [];
+            const layers = [mapData.background, mapData.foreground, mapData.water];
+
+            layers.forEach(layer => {
+                for (let coord in layer) {
+                    const src = layer[coord].src;
+                    if (!imgCache[src]) {
+                        const img = new Image();
+                        img.src = src;
+                        imgCache[src] = img;
+                        promises.push(img.decode().catch(() => { }));
+                    }
+                }
+            });
+            return Promise.all(promises);
+        }
 
         // Setup Background Image
         let bgImage = new Image();
-        bgImage.src = 'backgrounds/GE_spring_background.jpg';
-        bgImage.onload = () => draw();
-        bgImage.onerror = () => console.log("Default background not found.");
 
         canvas.width = COLS * TILE_SIZE;
         canvas.height = ROWS * TILE_SIZE;
@@ -298,9 +422,6 @@
         canvas.addEventListener('mousemove', handleInput);
         window.addEventListener('mouseup', handleMouseUp);
         canvas.oncontextmenu = (e) => e.preventDefault();
-
-        //starting popup
-        showWebsiteInfo();
 
         /**
          * --- Cache Logic ---
@@ -399,7 +520,6 @@
                     water: decompressLayer(parsed.wt) // Decompress water layer
                 };
 
-                draw();
                 return true;
             } catch (e) {
                 console.error("Failed to parse cached map data:", e);
@@ -451,19 +571,21 @@
                         img.title = name;
                         img.onclick = () => selectTile(img.src, img);
                         palette.appendChild(img);
+
+                        // Populate imgCache immediately to prevent async redraw flicker
+                        imgCache[dataUrl] = new Image();
+                        imgCache[dataUrl].src = dataUrl;
+
                         totalTiles++;
                     });
 
-                    console.log(`Imported sheet ${index}: ${frames.length} tiles.`);
+                    if (onProgress) onProgress(index * 10); // Rough progress based on sheet count
                     index++;
                 } catch (err) {
                     console.warn(`Stopped loading at index ${index}:`, err.message);
                     break;
                 }
             }
-
-            console.log(`Total blocks loaded across all sheets: ${totalTiles}`);
-            draw();
         }
 
         function selectTile(src, el) {
@@ -601,13 +723,9 @@
                 if (!imgCache[tile.src]) {
                     const img = new Image();
                     img.src = tile.src;
-                    try {
-                        await img.decode();
-                        imgCache[tile.src] = img;
-                    } catch (e) {
-                        console.warn("Skipping broken tile image:", tile.src);
-                        continue;
-                    }
+                    imgCache[tile.src] = img;
+                    // Note: We don't await here to keep rendering performance high; 
+                    // prewarmMapCache handles the initial loading.
                 }
 
                 const cachedImg = imgCache[tile.src];
@@ -1064,6 +1182,10 @@
                     img.title = file.name.replace(".png", "").replace(".jpg", "");
                     img.onclick = () => selectTile(img.src, img);
                     document.getElementById('tilePalette').appendChild(img);
+
+                    // Add to cache immediately
+                    imgCache[img.src] = new Image();
+                    imgCache[img.src].src = img.src;
                 };
                 reader.readAsDataURL(file);
             });
@@ -1084,7 +1206,7 @@
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = (ev) => {
+            reader.onload = async (ev) => {
                 try {
                     const importedData = JSON.parse(ev.target.result);
                     if (importedData.background && importedData.foreground) {
@@ -1094,6 +1216,10 @@
                             foreground: importedData.foreground,
                             water: importedData.water || {}
                         };
+
+                        // Fix: Pre-load the imported tiles so shadows show immediately
+                        await prewarmMapCache();
+
                         draw();
                         saveToCache();
                     } else {
@@ -1257,7 +1383,7 @@
 
         function showWebsiteInfo() {
             displayPopUp(
-                "Latest Features: \n adjusting grid division, \n copy visuals, \n cut and paste, \n water layer without water, \n shadows! \n\n If you have suggestions, \n dm me in discord!",
+                "Latest Features: \n loading screen, \n adjusting grid division, \n copy visuals, \n cut and paste, \n water layer without water, \n shadows! \n\n If you have suggestions, \n dm me in discord!",
                 "Version 1.8",
                 "Website by: Onyx"
             );
