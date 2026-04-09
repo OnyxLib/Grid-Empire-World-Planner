@@ -331,6 +331,25 @@
         let showPastePreview = false;
 
         /**
+         * --- Loading Screen Helpers ---
+         */
+        function showLoading(text) {
+            const overlay = document.getElementById('loadingOverlay');
+            const loadingText = document.getElementById('loadingText');
+            const progressBar = document.getElementById('progressBar');
+            loadingText.innerText = text;
+            progressBar.style.width = '0%';
+            overlay.style.display = 'flex';
+            overlay.style.opacity = '1';
+        }
+
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.style.display = 'none', 500);
+        }
+
+        /**
          * --- App Initialization with Loading Screen ---
          */
         async function initApp() {
@@ -341,7 +360,7 @@
                 // 1. Wait for Spritesheets and fill imgCache
                 await loadSpritesheets((progress) => {
                     progressBar.style.width = `${progress * 0.8}%`; // Reserve 20% for background/cache
-                    loadingText.innerText = `Loading Assets: ${Math.round(progress)}%`;
+                    loadingText.innerText = `Loading & Rendering Assets: ${Math.round(progress)}%`;
                 });
 
                 // 2. Load Default Background
@@ -374,9 +393,7 @@
 
                 // Hide Loading Screen
                 setTimeout(() => {
-                    const overlay = document.getElementById('loadingOverlay');
-                    overlay.style.opacity = '0';
-                    setTimeout(() => overlay.style.display = 'none', 500);
+                    hideLoading();
                     showWebsiteInfo();
                 }, 400);
 
@@ -397,6 +414,12 @@
             const promises = [];
             const layers = [mapData.background, mapData.foreground, mapData.water];
 
+            // Create a small offscreen canvas to "prime" the GPU with these textures
+            const primeCanvas = document.createElement('canvas');
+            primeCanvas.width = TILE_SIZE;
+            primeCanvas.height = TILE_SIZE;
+            const pCtx = primeCanvas.getContext('2d');
+
             layers.forEach(layer => {
                 for (let coord in layer) {
                     const src = layer[coord].src;
@@ -404,7 +427,12 @@
                         const img = new Image();
                         img.src = src;
                         imgCache[src] = img;
-                        promises.push(img.decode().catch(() => { }));
+
+                        const p = img.decode().then(() => {
+                            // Draw once to force GPU upload
+                            pCtx.drawImage(img, 0, 0, TILE_SIZE, TILE_SIZE);
+                        }).catch(() => { });
+                        promises.push(p);
                     }
                 }
             });
@@ -532,13 +560,20 @@
         /**
          * Iteratively loads spritesheet1.json, spritesheet2.json, etc.
          * Stops when a fetch returns a non-OK status.
+         * Pre-renders every tile into the cache immediately.
          */
-        async function loadSpritesheets() {
+        async function loadSpritesheets(onProgress) {
             const palette = document.getElementById('tilePalette');
             palette.innerHTML = ''; // Clear once before starting the multi-load
 
             let index = 1;
             let totalTiles = 0;
+
+            // Create a small offscreen canvas to "render" the tiles once so they are ready in the GPU cache
+            const primeCanvas = document.createElement('canvas');
+            primeCanvas.width = TILE_SIZE;
+            primeCanvas.height = TILE_SIZE;
+            const pCtx = primeCanvas.getContext('2d');
 
             while (true) {
                 try {
@@ -556,9 +591,9 @@
                     const tCtx = tempCanvas.getContext('2d');
                     const frames = Object.entries(data.frames).sort((a, b) => a[1].index - b[1].index);
 
-                    frames.forEach(([name, info]) => {
+                    for (const [name, info] of frames) {
                         const { x, y, w, h } = info.frame;
-                        if (w === 0 || h === 0) return;
+                        if (w === 0 || h === 0) continue;
 
                         tempCanvas.width = w;
                         tempCanvas.height = h;
@@ -572,12 +607,18 @@
                         img.onclick = () => selectTile(img.src, img);
                         palette.appendChild(img);
 
-                        // Populate imgCache immediately to prevent async redraw flicker
-                        imgCache[dataUrl] = new Image();
-                        imgCache[dataUrl].src = dataUrl;
+                        // Populate imgCache and "prime" it by rendering it once
+                        const cachedImg = new Image();
+                        cachedImg.src = dataUrl;
+                        imgCache[dataUrl] = cachedImg;
+
+                        // Wait for the individual tile to decode and draw it to prime the GPU
+                        await cachedImg.decode();
+                        pCtx.clearRect(0, 0, TILE_SIZE, TILE_SIZE);
+                        pCtx.drawImage(cachedImg, 0, 0, TILE_SIZE, TILE_SIZE);
 
                         totalTiles++;
-                    });
+                    }
 
                     if (onProgress) onProgress(index * 10); // Rough progress based on sheet count
                     index++;
@@ -1205,6 +1246,10 @@
         document.getElementById('mapImport').onchange = (e) => {
             const file = e.target.files[0];
             if (!file) return;
+
+            // Show loading screen during import
+            showLoading("Importing World Data...");
+
             const reader = new FileReader();
             reader.onload = async (ev) => {
                 try {
@@ -1222,10 +1267,15 @@
 
                         draw();
                         saveToCache();
+
+                        // Give a small delay for the UI to feel responsive
+                        setTimeout(hideLoading, 500);
                     } else {
+                        hideLoading();
                         alert("Invalid map file format.");
                     }
                 } catch (err) {
+                    hideLoading();
                     alert("Error reading file: " + err.message);
                 }
             };
@@ -1383,7 +1433,7 @@
 
         function showWebsiteInfo() {
             displayPopUp(
-                "Latest Features: \n loading screen, \n adjusting grid division, \n copy visuals, \n cut and paste, \n water layer without water, \n shadows! \n\n If you have suggestions, \n dm me in discord!",
+                "Latest Features: \n Pre-rendered textures, \n adjusting grid division, \n copy visuals, \n cut and paste, \n water layer without water, \n shadows! \n\n If you have suggestions, \n dm me in discord!",
                 "Version 1.8",
                 "Website by: Onyx"
             );
