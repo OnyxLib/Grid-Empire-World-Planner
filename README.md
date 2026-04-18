@@ -39,10 +39,12 @@ Disclaimer: AI was used in the making of this application.
 - Import map file
 - Eyedropper tool
 - keybinds
+- autotiling
+- secret features
 
 ## Future Plans
 - [ ] Add all the tiles and backgrounds when the redesign is complete
-- [ ] Implement autotiling 
+- [x] Implement autotiling 
 - [x] Add another layer for water logged blocks
 - [x] Add shadows
 - [x] Make a website to run this world planner
