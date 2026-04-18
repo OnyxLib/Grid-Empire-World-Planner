@@ -7,6 +7,7 @@
     <title>Grid Empire Web World Planner</title>
     <style>
         :root {
+            /* Design tokens for consistent UI theming */
             --bg-dark: #121212;
             --panel-bg: #1e1e1e;
             --accent: #3b82f6;
@@ -24,7 +25,7 @@
             overflow: hidden;
         }
 
-        /* Loading Screen Styles */
+        /* --- Loading Overlay --- */
         #loadingOverlay {
             position: fixed;
             top: 0;
@@ -70,7 +71,7 @@
             text-transform: uppercase;
         }
 
-        /* Sidebar */
+        /* --- Sidebar & Controls --- */
         .sidebar {
             width: 320px;
             background: var(--panel-bg);
@@ -115,6 +116,18 @@
             margin-bottom: 5px;
         }
 
+        input[type="number"] {
+            width: 10%;
+            padding: 8px;
+            background: #2d2d2d;
+            border: 1px solid var(--border);
+            color: white;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-bottom: 3px;
+            align-content: center;
+        }
+
         button {
             cursor: pointer;
             transition: 0.2s;
@@ -130,7 +143,7 @@
             font-weight: bold;
         }
 
-        /* Palette & Search */
+        /* --- Asset Palette --- */
         #tileSearch {
             background: #111;
             border-color: var(--accent);
@@ -173,7 +186,6 @@
         .viewport {
             position: relative;
             overflow: hidden;
-            /* Changed from auto to hidden for transform-based panning */
             background: #0f0f0f;
             flex-grow: 1;
             display: flex;
@@ -185,9 +197,9 @@
             display: block;
             image-rendering: pixelated;
             background-color: #1a1a1a;
-            /* Transform origin handled by JS for precise control */
         }
 
+        /* Floating Info Panels */
         .info {
             display: none;
             position: fixed;
@@ -215,6 +227,99 @@
             width: 0;
             height: 0;
         }
+
+        /* --- Photo Processor Modal --- */
+        #photoModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 11000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--accent);
+            width: 600px;
+            max-width: 95vw;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            color: var(--accent);
+        }
+
+        .preview-container {
+            width: 100%;
+            height: 350px;
+            background: #111;
+            border: 1px solid var(--border);
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            /* Changed to hidden for pan/zoom control */
+            position: relative;
+            cursor: grab;
+        }
+
+        .preview-container:active {
+            cursor: grabbing;
+        }
+
+        #photoPreviewCanvas {
+            image-rendering: pixelated;
+            background-color: #1a1a1a;
+            transform-origin: center center;
+            transition: transform 0.05s linear;
+        }
+
+        .input-group-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+            margin-left: 15px;
+        }
+
+        .input-group-row label {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            min-width: 60px;
+        }
+
+        .ratio-container {
+            margin-left: auto;
+            display: flex;
+            align-items: flex-end;
+            margin-right: 15px;
+            margin-left: 15px;
+            gap: 20px;
+        }
+
+        #ratioDisplay,
+        #originalRatioDisplay {
+            font-family: monospace;
+            font-size: 0.75rem;
+        }
+
+        #ratioDisplay {
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        #originalRatioDisplay {
+            color: #6b7280;
+        }
     </style>
 </head>
 
@@ -225,6 +330,36 @@
             <h2 id="loadingText">Initializing World Planner...</h2>
             <div class="progress-bar-bg">
                 <div id="progressBar"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="photoModal">
+        <div class="modal-content">
+            <h3>Photo to Blocks Conversion</h3>
+            <div class="preview-container" id="photoPreviewContainer">
+                <canvas id="photoPreviewCanvas"></canvas>
+            </div>
+
+            <div class="input-group-row">
+                <label>Width:</label>
+                <input type="number" id="targetW" value="20" min="1" max="100" oninput="handleDimensionChange('w')">
+                <label style="margin-left: 10px">Height:</label>
+                <input type="number" id="targetH" value="57" min="1" max="60" oninput="handleDimensionChange('h')">
+
+                <div class="ratio-container">
+                    <span id="ratioDisplay">Current Ratio: 1:1</span>
+                    <span id="originalRatioDisplay">Original: --</span>
+                </div>
+            </div>
+
+            <div class="dual-control-row">
+                <button id="lockRatioBtn" onclick="toggleRatioLock()">Lock Ratio: Off</button>
+                <button onclick="updateConversionPreview()">Update Render</button>
+            </div>
+            <div class="dual-control-row">
+                <button onclick="confirmPhotoImport()">Confirm & Paste</button>
+                <button onclick="closePhotoModal()">Exit</button>
             </div>
         </div>
     </div>
@@ -262,6 +397,10 @@
             </div>
             <button onclick="document.getElementById('tileUpload').click()">Import Custom Blocks</button>
             <input type="file" id="tileUpload" accept="image/*" multiple style="display:none">
+
+            <button id="btnPhotoImportTrigger" onclick="document.getElementById('photoImport').click()"
+                style="display: none;">Photo to Blocks</button>
+            <input type="file" id="photoImport" accept="image/*" style="display:none">
         </div>
 
         <div class="control-group">
@@ -298,72 +437,111 @@
     </main>
 
     <script>
+        /******************************************************************
+        * 1. GLOBAL CONSTANTS & CACHED DOM ELEMENTS
+        ******************************************************************/
         const COLS = 100, ROWS = 60, TILE_SIZE = 34;
-        const SHADOW_OFFSET = 9; // Southeast shadow offset distance
-        const STORAGE_KEY = 'gridEmpire_cachedMap'; // Key for website cache
+        const SHADOW_OFFSET = 9;
+        const STORAGE_KEY = 'gridEmpire_cachedMap';
+
+        // DOM Elements
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
         const viewport = document.querySelector('.viewport');
         const coordDisplay = document.getElementById('coordDisplay');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingText = document.getElementById('loadingText');
+        const progressBar = document.getElementById('progressBar');
+        const tilePalette = document.getElementById('tilePalette');
+        const brushSizeSelect = document.getElementById('brushSize');
+        const tileSearchInput = document.getElementById('tileSearch');
+        const rotationBtn = document.getElementById('rotation');
+        const mirrorBtn = document.getElementById('mirror');
+        const layerSelectBtn = document.getElementById('layerSelect');
+        const btnBrush = document.getElementById('btnBrush');
+        const btnBucket = document.getElementById('btnBucket');
+        const btnPan = document.getElementById('btnPan');
+        const btnSelect = document.getElementById('btnSelect');
+        const infoForm = document.getElementById('myForm');
+        const headerTextEl = document.getElementById('headerText');
+        const bodyTextEl = document.getElementById('bodyText');
+        const endTextEl = document.getElementById('endText');
+        const mapImport = document.getElementById('mapImport');
+        const bgUpload = document.getElementById('bgUpload');
+        const tileUpload = document.getElementById('tileUpload');
+
+        /* Photo Processing State */
+        let activeProcessingImg = null;
+        let currentProcessedTiles = [];
+        const photoModal = document.getElementById('photoModal');
+        const previewCanvas = document.getElementById('photoPreviewCanvas');
+        const previewContainer = document.getElementById('photoPreviewContainer');
+        const pCtx = previewCanvas.getContext('2d');
+        const targetWInput = document.getElementById('targetW');
+        const targetHInput = document.getElementById('targetH');
+        const ratioDisplay = document.getElementById('ratioDisplay');
+        const originalRatioDisplay = document.getElementById('originalRatioDisplay');
+        const lockRatioBtn = document.getElementById('lockRatioBtn');
+        const btnPhotoImportTrigger = document.getElementById('btnPhotoImportTrigger');
+        const photoImport = document.getElementById('photoImport');
+
+        // Setup Main Canvas
+        canvas.width = COLS * TILE_SIZE;
+        canvas.height = ROWS * TILE_SIZE;
+
+        // Offscreen buffer for shadow compositing
         const shadowCanvas = document.createElement('canvas');
         const shadowCtx = shadowCanvas.getContext('2d');
 
-        // State
-        let mapData = { background: {}, foreground: {}, water: {} }; // Added 'water' layer
+        /** --- Application State --- */
+        let mapData = { background: {}, foreground: {}, water: {} };
         let history = [], redoStack = [];
         let selectedTileData = null;
         let currentLayer = "foreground";
         let tool = 'pan';
-        let zoom = 1.00, rotation = 0, flipped = false, showGrid = true;
-        let isGKeyPressed = false, hasScrolledWithG = false, gridParts = 0; maxDivision = 20;
-        let panX = 0, panY = 0;
-        let lastX = null;
-        let lastY = null;
-        let currentMouseX = 0, currentMouseY = 0; // Tracked for ghost preview
-        let isInfoVisible = false; // Renamed from showInfo to avoid collision with function name
-        const imgCache = {};
-        let saveTimeout = null; // For debouncing cache saves
 
-        // Selection State
-        let selectionRect = null; // {x1, y1, x2, y2}
+        /* Transform & UI State */
+        let zoom = 1.00, rotation = 0, flipped = false, showGrid = true;
+        let isGKeyPressed = false, hasScrolledWithG = false, gridParts = 0, maxDivision = 20;
+        let panX = 0, panY = 0;
+        let lastX = null, lastY = null;
+        let currentMouseX = 0, currentMouseY = 0;
+        let isInfoVisible = false;
+        let bgImage = new Image();
+
+        const imgCache = {}; // Global store for loaded Image objects
+        const tileNameLookup = {}; // Maps data URLs to their readable names
+        const autotileMap = {}; // Maps base tile names to their autotile variants { "Dirt Block": { "85": "dataURL" } }
+        let saveTimeout = null;
+
+        /* Selection & Clipboard State */
+        let selectionRect = null;
         let isSelecting = false;
         let clipboard = null;
         let showPastePreview = false;
 
-        /**
-         * --- Loading Screen Helpers ---
-         */
-        function showLoading(text) {
-            const overlay = document.getElementById('loadingOverlay');
-            const loadingText = document.getElementById('loadingText');
-            const progressBar = document.getElementById('progressBar');
-            loadingText.innerText = text;
-            progressBar.style.width = '0%';
-            overlay.style.display = 'flex';
-            overlay.style.opacity = '1';
-        }
+        // Modal Preview Transform State
+        let pZoom = 1.0, pPanX = 0, pPanY = 0;
+        let isPanningPhoto = false;
+        let isRatioLocked = false;
+        let originalImgRatio = 1.0;
 
-        function hideLoading() {
-            const overlay = document.getElementById('loadingOverlay');
-            overlay.style.opacity = '0';
-            setTimeout(() => overlay.style.display = 'none', 500);
-        }
 
-        /**
-         * --- App Initialization with Loading Screen ---
-         */
+        /******************************************************************
+         * 2. INITIALIZATION
+         ******************************************************************/
+
+        initApp();
+        // Initialize Photo Controls on load
+        initPhotoPreviewControls();
+
         async function initApp() {
-            const progressBar = document.getElementById('progressBar');
-            const loadingText = document.getElementById('loadingText');
-
             try {
-                // 1. Wait for Spritesheets and fill imgCache
                 await loadSpritesheets((progress) => {
-                    progressBar.style.width = `${progress * 0.8}%`; // Reserve 20% for background/cache
-                    loadingText.innerText = `Loading & Rendering Assets: ${Math.round(progress)}%`;
+                    progressBar.style.width = `${progress * 0.8}%`;
+                    loadingText.innerText = `Loading Assets: ${Math.round(progress)}%`;
                 });
 
-                // 2. Load Default Background
                 loadingText.innerText = "Setting Up Environment...";
                 await new Promise((resolve) => {
                     bgImage.src = 'backgrounds/GE_spring_background.jpg';
@@ -375,23 +553,15 @@
                 });
                 progressBar.style.width = '90%';
 
-                // 3. Load from Cache and Populate Map-Specific imgCache
                 loadingText.innerText = "Restoring World Data...";
-                const hasCache = loadFromCache();
-                if (!hasCache) {
-                    addBedrockLayers();
-                }
+                if (!loadFromCache()) addBedrockLayers();
 
-                // Ensure all tiles in mapData are pre-loaded into imgCache to fix shadow issue
                 await prewarmMapCache();
+                await updateTransform();
+                await draw();
 
                 progressBar.style.width = '100%';
 
-                // Final render
-                updateTransform();
-                draw();
-
-                // Hide Loading Screen
                 setTimeout(() => {
                     hideLoading();
                     showWebsiteInfo();
@@ -403,188 +573,59 @@
             }
         }
 
-        // Start App
-        initApp();
-
-        /**
-         * Ensures every tile currently in the map is decoded and in the imgCache
-         * before the first render. This fixes the "missing shadows/tiles" on start.
+        /** * Pre-decodes and renders all tiles currently in the map.
+         * Prevents visual "pop-in" or missing shadows on the initial frame.
          */
         async function prewarmMapCache() {
             const promises = [];
             const layers = [mapData.background, mapData.foreground, mapData.water];
-
-            // Create a small offscreen canvas to "prime" the GPU with these textures
-            const primeCanvas = document.createElement('canvas');
-            primeCanvas.width = TILE_SIZE;
-            primeCanvas.height = TILE_SIZE;
-            const pCtx = primeCanvas.getContext('2d');
+            const pCanvas = document.createElement('canvas');
+            pCanvas.width = pCanvas.height = TILE_SIZE;
+            const pCtx = pCanvas.getContext('2d');
 
             layers.forEach(layer => {
                 for (let coord in layer) {
-                    const src = layer[coord].src;
+                    const [x, y] = coord.split(',').map(Number);
+                    const tile = layer[coord];
+                    // Resolve autotile source
+                    const src = getAutotiledSrc(x, y, layer) || tile.src;
+
                     if (!imgCache[src]) {
                         const img = new Image();
                         img.src = src;
                         imgCache[src] = img;
 
-                        const p = img.decode().then(() => {
+                        promises.push(img.decode().then(() => {
                             // Draw once to force GPU upload
                             pCtx.drawImage(img, 0, 0, TILE_SIZE, TILE_SIZE);
-                        }).catch(() => { });
-                        promises.push(p);
+                        }).catch(() => { }));
                     }
                 }
             });
             return Promise.all(promises);
         }
 
-        // Setup Background Image
-        let bgImage = new Image();
-
-        canvas.width = COLS * TILE_SIZE;
-        canvas.height = ROWS * TILE_SIZE;
-
-        //event listeners
-        canvas.addEventListener('mousedown', handleInput);
-        canvas.addEventListener('mousemove', handleInput);
-        window.addEventListener('mouseup', handleMouseUp);
-        canvas.oncontextmenu = (e) => e.preventDefault();
-
-        /**
-         * --- Cache Logic ---
-         * Persists mapData to LocalStorage. 
-         * Includes a debounce to prevent performance lag during active painting.
-         * Uses a Tokenized Manifest to deduplicate image strings.
-         */
-
-        function saveToCache() {
-            clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(() => {
-                try {
-                    // 1. Build a manifest of unique tile sources
-                    const manifest = [];
-                    const srcToId = {};
-
-                    const getTileId = (src) => {
-                        if (srcToId[src] === undefined) {
-                            srcToId[src] = manifest.length;
-                            manifest.push(src);
-                        }
-                        return srcToId[src];
-                    };
-
-                    // 2. Compress the map layers using IDs instead of full strings
-                    const compressLayer = (layer) => {
-                        const compressed = {};
-                        if (!layer) return compressed;
-                        for (let coord in layer) {
-                            const tile = layer[coord];
-                            compressed[coord] = {
-                                i: getTileId(tile.src), // 'i' for index
-                                r: tile.rotation,      // 'r' for rotation
-                                f: tile.flipped ? 1 : 0 // 'f' for flipped (using 1/0 for space)
-                            };
-                        }
-                        return compressed;
-                    };
-
-                    const payload = {
-                        v: 2, // Versioning for future migrations
-                        m: manifest,
-                        bg: compressLayer(mapData.background),
-                        fg: compressLayer(mapData.foreground),
-                        wt: compressLayer(mapData.water) // New water layer key
-                    };
-
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-                    console.log(`Cache optimized: ${manifest.length} unique tiles stored.`);
-                } catch (e) {
-                    console.warn("Storage limit still exceeded. Consider clearing unused custom blocks.");
-                }
-            }, 1000);
-        }
-
-        /**
-         * Restores and decompress mapData from LocalStorage.
-         */
-        function loadFromCache() {
-            const cached = localStorage.getItem(STORAGE_KEY);
-            if (!cached) return false;
-
-            try {
-                const parsed = JSON.parse(cached);
-
-                // Handle legacy format (Version 1) if it exists
-                if (!parsed.v || parsed.v < 2) {
-                    if (parsed.background && parsed.foreground) {
-                        mapData = {
-                            background: parsed.background,
-                            foreground: parsed.foreground,
-                            water: parsed.water || {}
-                        };
-                        return true;
-                    }
-                    return false;
-                }
-                const manifest = parsed.m;
-                const decompressLayer = (compressed) => {
-                    const layer = {};
-                    if (!compressed) return layer;
-                    for (let coord in compressed) {
-                        const tile = compressed[coord];
-                        layer[coord] = {
-                            src: manifest[tile.i],
-                            rotation: tile.r,
-                            flipped: tile.f === 1
-                        };
-                    }
-                    return layer;
-                };
-
-                mapData = {
-                    background: decompressLayer(parsed.bg),
-                    foreground: decompressLayer(parsed.fg),
-                    water: decompressLayer(parsed.wt) // Decompress water layer
-                };
-
-                return true;
-            } catch (e) {
-                console.error("Failed to parse cached map data:", e);
-                return false;
-            }
-        }
-
-        // --- Core Rendering ---
-
-        /**
-         * Iteratively loads spritesheet1.json, spritesheet2.json, etc.
-         * Stops when a fetch returns a non-OK status.
-         * Pre-renders every tile into the cache immediately.
+        /** * Sequentially fetches and processes spritesheet metadata and images.
+         * Continues until a fetch fails (suggesting no more sheets exist).
+         * @param {Function} onProgress - Callback for loading bar updates.
          */
         async function loadSpritesheets(onProgress) {
-            const palette = document.getElementById('tilePalette');
-            palette.innerHTML = ''; // Clear once before starting the multi-load
-
+            tilePalette.innerHTML = '';
             let index = 1;
-            let totalTiles = 0;
 
-            // Create a small offscreen canvas to "render" the tiles once so they are ready in the GPU cache
-            const primeCanvas = document.createElement('canvas');
-            primeCanvas.width = TILE_SIZE;
-            primeCanvas.height = TILE_SIZE;
-            const pCtx = primeCanvas.getContext('2d');
+            const pCanvas = document.createElement('canvas');
+            pCanvas.width = pCanvas.height = TILE_SIZE;
+            const pCtx = pCanvas.getContext('2d');
 
             while (true) {
                 try {
                     const response = await fetch(`spritesheet${index}.json`);
-                    if (!response.ok) break; // Exit loop if file doesn't exist (e.g. 404)
+                    if (!response.ok) break;
 
                     const data = await response.json();
                     const spriteImg = new Image();
                     spriteImg.crossOrigin = "anonymous";
                     spriteImg.src = data.meta.image || `spritesheet${index}.png`;
-
                     await spriteImg.decode();
 
                     const tempCanvas = document.createElement('canvas');
@@ -595,182 +636,251 @@
                         const { x, y, w, h } = info.frame;
                         if (w === 0 || h === 0) continue;
 
-                        tempCanvas.width = w;
-                        tempCanvas.height = h;
+                        tempCanvas.width = w; tempCanvas.height = h;
                         tCtx.clearRect(0, 0, w, h);
                         tCtx.drawImage(spriteImg, x, y, w, h, 0, 0, w, h);
 
                         const dataUrl = tempCanvas.toDataURL();
-                        const img = document.createElement('img');
-                        img.src = dataUrl;
-                        img.title = name;
-                        img.onclick = () => selectTile(img.src, img);
-                        palette.appendChild(img);
+                        tileNameLookup[dataUrl] = name;
 
-                        // Populate imgCache and "prime" it by rendering it once
-                        const cachedImg = new Image();
-                        cachedImg.src = dataUrl;
-                        imgCache[dataUrl] = cachedImg;
+                        // Identify Autotile Variants (e.g., "Dirt Block_85")
+                        const nameMatches = name.match(/^(.*)_(\d+)$/);
 
-                        // Wait for the individual tile to decode and draw it to prime the GPU
-                        await cachedImg.decode();
-                        pCtx.clearRect(0, 0, TILE_SIZE, TILE_SIZE);
-                        pCtx.drawImage(cachedImg, 0, 0, TILE_SIZE, TILE_SIZE);
+                        if (nameMatches) {
+                            const baseName = nameMatches[1];
+                            const mask = nameMatches[2];
 
-                        totalTiles++;
+                            if (!autotileMap[baseName]) autotileMap[baseName] = {};
+                            autotileMap[baseName][mask] = dataUrl;
+
+                            // Cache the image, but do NOT add it to the visible tilePalette
+                            const cachedImg = new Image();
+                            cachedImg.src = dataUrl;
+                            imgCache[dataUrl] = cachedImg;
+                            await cachedImg.decode();
+                        } else {
+                            // Standard tile processing
+                            const img = document.createElement('img');
+                            img.src = dataUrl;
+                            img.title = name;
+                            img.onclick = () => selectTile(img.src, img);
+                            tilePalette.appendChild(img);
+
+                            const cachedImg = new Image();
+                            cachedImg.src = dataUrl;
+                            imgCache[dataUrl] = cachedImg;
+                            await cachedImg.decode();
+                            pCtx.drawImage(cachedImg, 0, 0, TILE_SIZE, TILE_SIZE);
+                        }
                     }
 
-                    if (onProgress) onProgress(index * 10); // Rough progress based on sheet count
+                    if (onProgress) onProgress(index * 10);
                     index++;
-                } catch (err) {
-                    console.warn(`Stopped loading at index ${index}:`, err.message);
-                    break;
-                }
+                } catch (err) { break; }
             }
         }
 
-        function selectTile(src, el) {
-            document.querySelectorAll('.palette img, .palette .color-tile').forEach(i => i.classList.remove('selected'));
-            el.classList.add('selected');
-            selectedTileData = src;
+        /******************************************************************
+         * 3. RENDERING ENGINE & AUTOTILING
+         ******************************************************************/
+
+        /**
+         * Evaluates adjacency and computes the bitmask for autotiling.
+         * Supports both 8-bit (47-tile "Blob") and 4-bit (16-tile "Cardinal") sets.
+         * * # 8-neighbor bitmask values (Powers of 2)
+         * # 1: NW, 2: N, 4: NE, 8: W, 16: E, 32: SW, 64: S, 128: SE
+         * * @param {number} x - The x coordinate on the grid
+         * @param {number} y - The y coordinate on the grid
+         * @param {Object} layerObj - The current map layer dictionary
+         * @returns {string} The source data URL of the autotiled variant or base tile
+         */
+        function getAutotiledSrc(x, y, layerObj) {
+            const tile = layerObj[`${x},${y}`];
+            if (!tile) return null;
+
+            const baseSrc = tile.src;
+            const tileName = tileNameLookup[baseSrc];
+
+            // If this tile doesn't have autotile variants, return the standard base source
+            if (!tileName || !autotileMap[tileName]) return baseSrc;
+
+            const variants = autotileMap[tileName];
+
+            /**
+             * Determine which bits are supported by this specific tile type.
+             */
+            const variantKeys = Object.keys(variants).map(Number);
+            let supportedMask = 0;
+            for (let i = 0; i < variantKeys.length; i++) {
+                supportedMask |= variantKeys[i];
+            }
+
+            /*
+            * Helper to verify matching adjacent block.
+            */
+            const isRelevantNeighbor = (nx, ny, bit) => {
+                // If the autotileMap for this tile never uses this bit, ignore the neighbor
+                if (!(supportedMask & bit)) return false;
+
+                const nTile = layerObj[`${nx},${ny}`];
+                return nTile && nTile.src === baseSrc;
+            };
+
+            // Cardinal neighbors - only true if neighbor matches AND tile supports the direction
+            const N = isRelevantNeighbor(x, y - 1, 2);
+            const W = isRelevantNeighbor(x - 1, y, 8);
+            const E = isRelevantNeighbor(x + 1, y, 16);
+            const S = isRelevantNeighbor(x, y + 1, 64);
+
+            // Corner neighbors - only true if neighbor matches AND tile supports the direction
+            const NW = isRelevantNeighbor(x - 1, y - 1, 1);
+            const NE = isRelevantNeighbor(x + 1, y - 1, 4);
+            const SW = isRelevantNeighbor(x - 1, y + 1, 32);
+            const SE = isRelevantNeighbor(x + 1, y + 1, 128);
+
+            // 1. Calculate the 4-bit Cardinal Mask (N=2, W=8, E=16, S=64)
+            let cardinalMask = 0;
+            if (N) cardinalMask |= 2;
+            if (W) cardinalMask |= 8;
+            if (E) cardinalMask |= 16;
+            if (S) cardinalMask |= 64;
+
+            // 2. Calculate the 8-bit Full Mask (Adding corner constraints)
+            let fullMask = cardinalMask;
+            if (NW && N && W) fullMask |= 1;
+            if (NE && N && E) fullMask |= 4;
+            if (SW && S && W) fullMask |= 32;
+            if (SE && S && E) fullMask |= 128;
+
+            // 3. Lookup Strategy: Try 8-bit first, fallback to 4-bit
+            let finalSrc = variants[fullMask] || variants[cardinalMask];
+
+            // Return the specific autotile variant if it exists, otherwise fallback to base
+            return finalSrc || baseSrc;
         }
 
-        // --- Core Rendering ---
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Added safety check for naturalWidth to prevent "broken" state errors
             if (bgImage && bgImage.complete && bgImage.naturalWidth > 0) {
                 ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
             }
 
-            //render layering, top most here is most bottom
             renderLayer(mapData.background);
             renderShadowLayer(mapData.foreground);
             renderLayer(mapData.foreground);
-            renderLayer(mapData.water); // Water renders above foreground
+            renderLayer(mapData.water);
 
-            // Render Ghost Selection if active
-            if (tool === 'select' && showPastePreview && clipboard) {
-                renderGhostSelection();
-            }
-
-            if (showGrid) {
-                ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
-                ctx.setLineDash([]);
-                ctx.beginPath();
-
-                if (gridParts === 0) {
-                    for (let i = 0; i <= COLS; i++) { ctx.moveTo(i * TILE_SIZE, 0); ctx.lineTo(i * TILE_SIZE, canvas.height); }
-                    for (let j = 0; j <= ROWS; j++) { ctx.moveTo(0, j * TILE_SIZE); ctx.lineTo(canvas.width, j * TILE_SIZE); }
-                } else {
-                    // Outer border
-                    ctx.moveTo(0, 0); ctx.lineTo(0, canvas.height);
-                    ctx.moveTo(canvas.width, 0); ctx.lineTo(canvas.width, canvas.height);
-                    ctx.moveTo(0, 0); ctx.lineTo(canvas.width, 0);
-                    ctx.moveTo(0, canvas.height); ctx.lineTo(canvas.width, canvas.height);
-
-                    const drawnX = new Set();
-                    const drawnY = new Set();
-
-                    // Inner lines
-                    for (let i = 1; i < gridParts; i++) {
-                        const tileX = Math.round((COLS * i) / gridParts);
-                        if (tileX > 0 && tileX < COLS && !drawnX.has(tileX)) {
-                            drawnX.add(tileX);
-                            ctx.moveTo(tileX * TILE_SIZE, 0);
-                            ctx.lineTo(tileX * TILE_SIZE, canvas.height);
-                        }
-
-                        const tileY = Math.round((ROWS * i) / gridParts);
-                        if (tileY > 0 && tileY < ROWS && !drawnY.has(tileY)) {
-                            drawnY.add(tileY);
-                            ctx.moveTo(0, tileY * TILE_SIZE);
-                            ctx.lineTo(canvas.width, tileY * TILE_SIZE);
-                        }
-                    }
-                }
-                ctx.stroke();
-            }
-
-            // Draw Selection Overlay
-            if (selectionRect) {
-                const x = Math.min(selectionRect.x1, selectionRect.x2) * TILE_SIZE;
-                const y = Math.min(selectionRect.y1, selectionRect.y2) * TILE_SIZE;
-                const w = (Math.abs(selectionRect.x2 - selectionRect.x1) + 1) * TILE_SIZE;
-                const h = (Math.abs(selectionRect.y2 - selectionRect.y1) + 1) * TILE_SIZE;
-
-                ctx.strokeStyle = '#3b82f6';
-                ctx.lineWidth = 1;
-                ctx.setLineDash([5, 5]);
-                ctx.strokeRect(x, y, w, h);
-                ctx.fillStyle = 'rgba(59, 130, 246, 0.2)';
-                ctx.fillRect(x, y, w, h);
-                ctx.setLineDash([]);
-            }
+            if (tool === 'select' && showPastePreview && clipboard) renderGhostSelection();
+            if (showGrid) drawGridOverlay();
+            if (selectionRect) drawSelectionRect();
         }
 
-        /**
-         * Renders the silhouette of foreground tiles onto a buffer, 
-         * then draws the buffer with 50% opacity to prevent darkening overlaps.
+        /** Draws the dynamic grid, supporting subdivisional scaling. */
+        function drawGridOverlay() {
+            ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
+            ctx.setLineDash([]);
+            ctx.beginPath();
+
+            if (gridParts === 0) {
+                for (let i = 0; i <= COLS; i++) { ctx.moveTo(i * TILE_SIZE, 0); ctx.lineTo(i * TILE_SIZE, canvas.height); }
+                for (let j = 0; j <= ROWS; j++) { ctx.moveTo(0, j * TILE_SIZE); ctx.lineTo(canvas.width, j * TILE_SIZE); }
+            } else {
+                const drawnX = new Set();
+                const drawnY = new Set();
+
+                for (let i = 1; i < gridParts; i++) {
+                    const tileX = Math.round((COLS * i) / gridParts);
+                    if (tileX > 0 && tileX < COLS && !drawnX.has(tileX)) {
+                        drawnX.add(tileX);
+                        ctx.moveTo(tileX * TILE_SIZE, 0);
+                        ctx.lineTo(tileX * TILE_SIZE, canvas.height);
+                    }
+
+                    const tileY = Math.round((ROWS * i) / gridParts);
+                    if (tileY > 0 && tileY < ROWS && !drawnY.has(tileY)) {
+                        drawnY.add(tileY);
+                        ctx.moveTo(0, tileY * TILE_SIZE);
+                        ctx.lineTo(canvas.width, tileY * TILE_SIZE);
+                    }
+                }
+            }
+            ctx.stroke();
+        }
+
+        function drawSelectionRect() {
+            const x = Math.min(selectionRect.x1, selectionRect.x2) * TILE_SIZE;
+            const y = Math.min(selectionRect.y1, selectionRect.y2) * TILE_SIZE;
+            const w = (Math.abs(selectionRect.x2 - selectionRect.x1) + 1) * TILE_SIZE;
+            const h = (Math.abs(selectionRect.y2 - selectionRect.y1) + 1) * TILE_SIZE;
+            ctx.strokeStyle = '#3b82f6';
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(x, y, w, h);
+            ctx.fillStyle = 'rgba(59, 130, 246, 0.2)';
+            ctx.fillRect(x, y, w, h);
+            ctx.setLineDash([]);
+        }
+
+        /** * Renders a unified shadow map for a layer.
+         * Uses a black silhouette and globalAlpha to prevent darkening where tiles overlap.
          */
         function renderShadowLayer(layer) {
             if (!layer || Object.keys(layer).length === 0) return;
 
-            shadowCanvas.width = COLS * TILE_SIZE;
-            shadowCanvas.height = ROWS * TILE_SIZE;
+            shadowCanvas.width = canvas.width;
+            shadowCanvas.height = canvas.height;
             shadowCtx.clearRect(0, 0, shadowCanvas.width, shadowCanvas.height);
 
-            // 1. Draw tile silhouettes with SE offset
             for (let coord in layer) {
                 const [x, y] = coord.split(',').map(Number);
                 const tile = layer[coord];
-                const cachedImg = imgCache[tile.src];
 
-                if (!cachedImg || cachedImg.naturalWidth === 0) continue;
+                const srcToRender = getAutotiledSrc(x, y, layer) || tile.src;
+                const img = imgCache[srcToRender];
+
+                if (!img || img.naturalWidth === 0) continue;
 
                 shadowCtx.save();
-                // Apply Southeast offset
                 shadowCtx.translate(
                     x * TILE_SIZE + TILE_SIZE / 2 + SHADOW_OFFSET,
                     y * TILE_SIZE + TILE_SIZE / 2 + SHADOW_OFFSET
                 );
                 shadowCtx.rotate((tile.rotation * Math.PI) / 180);
                 shadowCtx.scale(tile.flipped ? -1 : 1, 1);
-                shadowCtx.drawImage(cachedImg, -TILE_SIZE / 2, -TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
+                shadowCtx.drawImage(img, -TILE_SIZE / 2, -TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
                 shadowCtx.restore();
             }
 
-            // 2. Force silhouettes to solid black
             shadowCtx.globalCompositeOperation = 'source-in';
             shadowCtx.fillStyle = 'black';
             shadowCtx.fillRect(0, 0, shadowCanvas.width, shadowCanvas.height);
             shadowCtx.globalCompositeOperation = 'source-over';
 
-            // 3. Draw shadow buffer to main canvas with 50% opacity
             ctx.save();
             ctx.globalAlpha = 0.1;
             ctx.drawImage(shadowCanvas, 0, 0);
             ctx.restore();
         }
 
+        /** Renders a standard tile layer with rotation and flipping. */
         async function renderLayer(layer) {
             if (!layer) return;
             for (let coord in layer) {
                 const [x, y] = coord.split(',').map(Number);
                 const tile = layer[coord];
 
+                const srcToRender = getAutotiledSrc(x, y, layer) || tile.src;
+
                 // Cache logic with safety for broken images
-                if (!imgCache[tile.src]) {
+                if (!imgCache[srcToRender]) {
                     const img = new Image();
-                    img.src = tile.src;
-                    imgCache[tile.src] = img;
+                    img.src = srcToRender;
+                    imgCache[srcToRender] = img;
                     // Note: We don't await here to keep rendering performance high; 
                     // prewarmMapCache handles the initial loading.
                 }
 
-                const cachedImg = imgCache[tile.src];
-                // Final verification before drawImage
+                const cachedImg = imgCache[srcToRender];
                 if (!cachedImg || cachedImg.naturalWidth === 0) continue;
 
                 ctx.save();
@@ -782,34 +892,31 @@
             }
         }
 
-        /**
-         * Renders a translucent preview of the clipboard content centered on the cursor.
-         */
+        /** Previews the clipboard contents at 50% opacity, centered on the cursor. */
         async function renderGhostSelection() {
             if (!clipboard) return;
-
             const centerOffsetX = Math.floor(clipboard.width / 2);
             const centerOffsetY = Math.floor(clipboard.height / 2);
 
             ctx.save();
             ctx.globalAlpha = 0.5;
-
             for (const tile of clipboard.tiles) {
                 if (!tile.data) continue;
-
                 const targetX = currentMouseX + tile.offsetX - centerOffsetX;
                 const targetY = currentMouseY + tile.offsetY - centerOffsetY;
 
                 // Bounds check for rendering performance
                 if (targetX < 0 || targetX >= COLS || targetY < 0 || targetY >= ROWS) continue;
 
-                if (!imgCache[tile.data.src]) {
+                const srcToRender = tile.data.src; // Keep clipboard preview simple using base src
+
+                if (!imgCache[srcToRender]) {
                     const img = new Image();
-                    img.src = tile.data.src;
-                    imgCache[tile.data.src] = img;
+                    img.src = srcToRender;
+                    imgCache[srcToRender] = img;
                 }
 
-                const cachedImg = imgCache[tile.data.src];
+                const cachedImg = imgCache[srcToRender];
                 if (cachedImg && cachedImg.complete && cachedImg.naturalWidth > 0) {
                     ctx.save();
                     ctx.translate(targetX * TILE_SIZE + TILE_SIZE / 2, targetY * TILE_SIZE + TILE_SIZE / 2);
@@ -822,47 +929,26 @@
             ctx.restore();
         }
 
-        // --- Features ---
-        function saveState() {
-            history.push(JSON.stringify(mapData));
-            if (history.length > 30) history.shift();
-            redoStack = [];
-            saveToCache(); // Update website cache on every state change
-        }
+        /******************************************************************
+         * 4. TOOL LOGIC
+         ******************************************************************/
 
-        function undo() {
-            if (history.length > 0) {
-                redoStack.push(JSON.stringify(mapData));
-                mapData = JSON.parse(history.pop());
-                draw();
-                saveToCache();
-            }
-        }
-
-        function redo() {
-            if (redoStack.length > 0) {
-                history.push(JSON.stringify(mapData));
-                mapData = JSON.parse(redoStack.pop());
-                draw();
-                saveToCache();
-            }
-        }
-
+        /** Switches the active tool and updates cursor/UI state. */
         function setTool(t) {
             tool = t;
-            // Feature: Reset paste preview when switching tools or re-selecting Select tool
             showPastePreview = false;
 
-            document.getElementById('btnBrush').classList.toggle('active', t === 'brush');
-            document.getElementById('btnBucket').classList.toggle('active', t === 'bucket');
-            document.getElementById('btnPan').classList.toggle('active', t === 'pan');
-            document.getElementById('btnSelect').classList.toggle('active', t === 'select');
+            btnBrush.classList.toggle('active', t === 'brush');
+            btnBucket.classList.toggle('active', t === 'bucket');
+            btnPan.classList.toggle('active', t === 'pan');
+            btnSelect.classList.toggle('active', t === 'select');
 
             if (t !== 'select') selectionRect = null;
             canvas.style.cursor = (t === 'pan') ? 'grab' : 'crosshair';
             draw();
         }
 
+        /** Standard flood fill algorithm for the Bucket tool. */
         function floodFill(startX, startY) {
             const layer = mapData[currentLayer];
             const target = layer[`${startX},${startY}`]?.src || null;
@@ -878,45 +964,222 @@
                 layer[key] = { src: selectedTileData, rotation, flipped };
                 queue.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
             }
-            saveToCache(); // Ensure bucket fills are cached
+            saveToCache();
         }
 
+        function placeBrush(startX, startY, layer, buttons) {
+            const size = parseInt(brushSizeSelect.value);
+            const offset = Math.floor(size / 2);
+
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    const x = startX + i - offset;
+                    const y = startY + j - offset;
+                    if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
+                        if (buttons === 1 && selectedTileData) {
+                            mapData[layer][`${x},${y}`] = { src: selectedTileData, rotation, flipped };
+                        } else if (buttons === 2) {
+                            delete mapData[layer][`${x},${y}`];
+                        }
+                    }
+                }
+            }
+        }
+
+        function copySelection() {
+            if (!selectionRect) return;
+            const xMin = Math.min(selectionRect.x1, selectionRect.x2);
+            const xMax = Math.max(selectionRect.x1, selectionRect.x2);
+            const yMin = Math.min(selectionRect.y1, selectionRect.y2);
+            const yMax = Math.max(selectionRect.y1, selectionRect.y2);
+
+            const width = xMax - xMin + 1;
+            const height = yMax - yMin + 1;
+
+            const tiles = [];
+            const layer = mapData[currentLayer];
+
+            for (let x = xMin; x <= xMax; x++) {
+                for (let y = yMin; y <= yMax; y++) {
+                    const key = `${x},${y}`;
+                    tiles.push({
+                        offsetX: x - xMin,
+                        offsetY: y - yMin,
+                        data: layer[key] ? { ...layer[key] } : null
+                    });
+                }
+            }
+
+            if (tiles.length > 0) {
+                clipboard = { tiles, originX: xMin, originY: yMin, width, height };
+                showPastePreview = true;
+                draw();
+            }
+        }
+
+        function cutSelection() {
+            if (!selectionRect) return;
+            copySelection();
+            saveState();
+            const xMin = Math.min(selectionRect.x1, selectionRect.x2);
+            const xMax = Math.max(selectionRect.x1, selectionRect.x2);
+            const yMin = Math.min(selectionRect.y1, selectionRect.y2);
+            const yMax = Math.max(selectionRect.y1, selectionRect.y2);
+
+            const layer = mapData[currentLayer];
+            for (let x = xMin; x <= xMax; x++) {
+                for (let y = yMin; y <= yMax; y++) {
+                    delete layer[`${x},${y}`];
+                }
+            }
+            draw(); saveToCache();
+        }
+
+        function pasteSelection() {
+            if (!clipboard) return;
+            const targetX = currentMouseX - Math.floor(clipboard.width / 2);
+            const targetY = currentMouseY - Math.floor(clipboard.height / 2);
+
+            saveState();
+            clipboard.tiles.forEach(tile => {
+                const px = targetX + tile.offsetX;
+                const py = targetY + tile.offsetY;
+                if (px >= 0 && px < COLS && py >= 0 && py < ROWS) {
+                    if (tile.data) {
+                        mapData[currentLayer][`${px},${py}`] = { ...tile.data };
+                    } else {
+                        delete mapData[currentLayer][`${px},${py}`];
+                    }
+                }
+            });
+            draw(); saveToCache();
+        }
+
+        function rotateTile() {
+            rotation = (rotation + 90) % 360;
+            rotationBtn.innerText = `Rot: ${rotation}°`;
+        }
+
+        function flipTile() {
+            flipped = !flipped;
+            mirrorBtn.innerText = `Mirror: ${flipped ? "On" : "Off"}`;
+        }
+
+        function toggleLayer() {
+            const layers = ["foreground", "background", "water"];
+            const labels = { foreground: "Block", background: "BG", water: "Water" };
+            const idx = (layers.indexOf(currentLayer) + 1) % layers.length;
+            currentLayer = layers[idx];
+            layerSelectBtn.innerText = `${labels[currentLayer]} Layer`;
+            selectionRect = null;
+            draw();
+        }
+
+        function clearMap() {
+            if (confirm("Clear?")) {
+                saveState();
+                mapData = { background: {}, foreground: {}, water: {} };
+                addBedrockLayers();
+                saveToCache();
+            }
+        }
+
+        function addBedrockLayers() {
+            saveState();
+            const paletteItems = document.querySelectorAll('#tilePalette img');
+            let bedrockSrc = null;
+
+            paletteItems.forEach(img => {
+                if (img.title.toLowerCase() === 'bedrock') {
+                    bedrockSrc = img.src;
+                }
+            });
+
+            if (!bedrockSrc) {
+                console.log("Bedrock tile not found.");
+                draw();
+                return;
+            }
+
+            for (let x = 0; x < COLS; x++) {
+                for (let y = ROWS - 3; y < ROWS; y++) {
+                    mapData.foreground[`${x},${y}`] = {
+                        src: bedrockSrc,
+                        rotation: 0,
+                        flipped: false
+                    };
+                }
+            }
+            draw(); saveToCache();
+        }
+
+        function filterTiles() {
+            const query = tileSearchInput.value.toLowerCase();
+            document.querySelectorAll('.palette img').forEach(el => {
+                const name = (el.title || "").toLowerCase();
+                el.style.display = name.includes(query) ? 'block' : 'none';
+            });
+        }
+
+        function selectTile(src, el) {
+            document.querySelectorAll('.palette img, .palette .color-tile').forEach(i => i.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedTileData = src;
+        }
+
+        function toggleGrid() { showGrid = !showGrid; gridParts = 0; draw(); }
+
+        function changeZoom(delta, e) {
+            const oldZoom = zoom;
+            zoom = Math.min(Math.max(0.4, zoom + delta), 10);
+            if (e) {
+                const vRect = viewport.getBoundingClientRect();
+                const mouseX = e.clientX - (vRect.left + vRect.width / 2);
+                const mouseY = e.clientY - (vRect.top + vRect.height / 2);
+                const ratio = zoom / oldZoom;
+                panX = mouseX - (mouseX - panX) * ratio;
+                panY = mouseY - (mouseY - panY) * ratio;
+            }
+            updateTransform();
+        }
+
+        function updateTransform() {
+            canvas.style.transform = `translate3d(${panX}px, ${panY}px, 0) scale(${zoom})`;
+        }
+
+
+        /******************************************************************
+         * 5. INPUT HANDLING
+         ******************************************************************/
         function handleInput(e) {
             const vRect = viewport.getBoundingClientRect();
+            const centerX = vRect.width / 2, centerY = vRect.height / 2;
 
-            // Calculate coordinates relative to the transformed canvas
-            const centerX = vRect.width / 2;
-            const centerY = vRect.height / 2;
-
+            /* Translate screen space to canvas space, accounting for Pan and Zoom */
             const localX = (e.clientX - (vRect.left + centerX + panX)) / zoom + (canvas.width / 2);
             const localY = (e.clientY - (vRect.top + centerY + panY)) / zoom + (canvas.height / 2);
-
             const mouseX = Math.floor(localX / TILE_SIZE);
             const mouseY = Math.floor(localY / TILE_SIZE);
 
-            // Update globals for coordinates and ghost rendering
-            currentMouseX = mouseX;
-            currentMouseY = mouseY;
+            currentMouseX = mouseX; currentMouseY = mouseY;
 
             if (mouseX >= 0 && mouseX < COLS && mouseY >= 0 && mouseY < ROWS) {
-                const displayY = (ROWS - 1) - mouseY;
-                coordDisplay.innerText = `Tile Position: (${mouseX}, ${displayY})`;
+                coordDisplay.innerText = `Tile Position: (${mouseX}, ${(ROWS - 1) - mouseY})`;
             }
 
-            // --- Eyedropper Tool Logic ---
-            if (e.altKey && e.buttons === 1 && e.type === 'mousedown') {
-                const key = `${mouseX},${mouseY}`;
-                const layer = mapData[currentLayer];
-                const tile = layer[key];
+            /* --- Tool Logic --- */
 
+            // Eyedropper: Samples base tile data from the current layer
+            if (e.altKey && e.buttons === 1 && e.type === 'mousedown') {
+                const tile = mapData[currentLayer][`${mouseX},${mouseY}`];
                 if (tile) {
+                    // Note: tile.src maintains the actual base tile, bypassing the autotiled view logic
                     selectedTileData = tile.src;
                     rotation = tile.rotation;
                     flipped = tile.flipped;
 
-                    // Update UI states
-                    document.getElementById('rotation').innerText = `Rot: ${rotation}°`;
-                    document.getElementById('mirror').innerText = `Mirror: ${(flipped) ? "On" : "Off"}`;
+                    rotationBtn.innerText = `Rot: ${rotation}°`;
+                    mirrorBtn.innerText = `Mirror: ${(flipped) ? "On" : "Off"}`;
 
                     // Highlight in palette
                     const paletteItems = document.querySelectorAll('.palette img, .palette .color-tile');
@@ -944,6 +1207,10 @@
 
             if (tool === 'select') {
                 if (e.type === 'mousedown' && e.buttons === 1) {
+                    if (showPastePreview && clipboard) {
+                        pasteSelection();
+                        return; // Exit early to prevent starting a new selection box on the same click
+                    }
                     isSelecting = true;
                     selectionRect = { x1: mouseX, y1: mouseY, x2: mouseX, y2: mouseY };
                     showPastePreview = false; // Hide ghost when starting new selection
@@ -996,120 +1263,16 @@
         }
 
         function handleMouseUp() {
-            isSelecting = false;
-            lastX = null;
-            lastY = null;
-            saveToCache(); // Final save on mouse release
+            isSelecting = false; lastX = lastY = null; saveToCache();
         }
 
-        function placeBrush(startX, startY, layer, buttons) {
-            const size = parseInt(document.getElementById('brushSize').value);
-            // Feature: Centered Brush logic
-            const offset = Math.floor(size / 2);
-
-            for (let i = 0; i < size; i++) {
-                for (let j = 0; j < size; j++) {
-                    const x = startX + i - offset;
-                    const y = startY + j - offset;
-                    if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
-                        if (buttons === 1 && selectedTileData) {
-                            mapData[layer][`${x},${y}`] = { src: selectedTileData, rotation, flipped };
-                        } else if (buttons === 2) {
-                            delete mapData[layer][`${x},${y}`];
-                        }
-                    }
-                }
-            }
-        }
-
-        // --- Clipboard Functions ---
-        function copySelection() {
-            if (!selectionRect) return;
-            const xMin = Math.min(selectionRect.x1, selectionRect.x2);
-            const xMax = Math.max(selectionRect.x1, selectionRect.x2);
-            const yMin = Math.min(selectionRect.y1, selectionRect.y2);
-            const yMax = Math.max(selectionRect.y1, selectionRect.y2);
-
-            const width = xMax - xMin + 1;
-            const height = yMax - yMin + 1;
-
-            const tiles = [];
-            const layer = mapData[currentLayer];
-
-            for (let x = xMin; x <= xMax; x++) {
-                for (let y = yMin; y <= yMax; y++) {
-                    const key = `${x},${y}`;
-                    // Feature: Always push the state, even if empty (null)
-                    tiles.push({
-                        offsetX: x - xMin,
-                        offsetY: y - yMin,
-                        data: layer[key] ? { ...layer[key] } : null
-                    });
-                }
-            }
-
-            if (tiles.length > 0) {
-                clipboard = { tiles, originX: xMin, originY: yMin, width, height };
-                showPastePreview = true;
-                console.log(`Copied ${tiles.length} tiles.`);
-                draw();
-            }
-        }
-
-        /**
-         * Copies selection to clipboard and removes tiles from the world.
-         */
-        function cutSelection() {
-            if (!selectionRect) return;
-
-            // 1. Copy content first
-            copySelection();
-
-            // 2. Remove the tiles from the layer
-            saveState();
-            const xMin = Math.min(selectionRect.x1, selectionRect.x2);
-            const xMax = Math.max(selectionRect.x1, selectionRect.x2);
-            const yMin = Math.min(selectionRect.y1, selectionRect.y2);
-            const yMax = Math.max(selectionRect.y1, selectionRect.y2);
-
-            const layer = mapData[currentLayer];
-            for (let x = xMin; x <= xMax; x++) {
-                for (let y = yMin; y <= yMax; y++) {
-                    delete layer[`${x},${y}`];
-                }
-            }
-
-            draw();
-            saveToCache();
-            console.log("Cut selection.");
-        }
-
-        function pasteSelection() {
-            if (!clipboard) return;
-
-            // Calculate centering based on clipboard dimensions
-            const targetX = currentMouseX - Math.floor(clipboard.width / 2);
-            const targetY = currentMouseY - Math.floor(clipboard.height / 2);
-
-            saveState();
-            clipboard.tiles.forEach(tile => {
-                const px = targetX + tile.offsetX;
-                const py = targetY + tile.offsetY;
-                if (px >= 0 && px < COLS && py >= 0 && py < ROWS) {
-                    if (tile.data) {
-                        mapData[currentLayer][`${px},${py}`] = { ...tile.data };
-                    } else {
-                        // Feature: Clear existing tile if pasted space is empty
-                        delete mapData[currentLayer][`${px},${py}`];
-                    }
-                }
-            });
-            draw();
-            saveToCache();
-        }
+        canvas.addEventListener('mousedown', handleInput);
+        canvas.addEventListener('mousemove', handleInput);
+        window.addEventListener('mouseup', handleMouseUp);
+        canvas.oncontextmenu = (e) => e.preventDefault();
 
         window.addEventListener('keydown', e => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
             const key = e.key.toLowerCase();
 
             if (key === 'g' && !e.repeat) {
@@ -1117,20 +1280,21 @@
                 hasScrolledWithG = false;
             }
 
+            if (e.altKey && key === 'o') {
+                e.preventDefault();
+                const isHidden = btnPhotoImportTrigger.style.display === 'none';
+                btnPhotoImportTrigger.style.display = isHidden ? 'block' : 'none';
+                return;
+            }
+
             if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
                 switch (key) {
-                    case 'z':
-                        e.preventDefault();
-                        if (e.shiftKey) redo(); else undo();
-                        break;
-                    case 'c':
-                        e.preventDefault(); copySelection(); break;
-                    case 'x':
-                        e.preventDefault(); cutSelection(); break; // Added Cut functionality
-                    case 'v':
-                        e.preventDefault(); pasteSelection(); break;
-                    case 'b':
-                        exportTileList(); break;
+                    case 'z': if (e.shiftKey) redo(); else undo(); break;
+                    case 'c': copySelection(); break;
+                    case 'x': cutSelection(); break;
+                    case 'v': pasteSelection(); break;
+                    case 'b': exportTileList(); break;
                 }
                 return;
             }
@@ -1154,20 +1318,17 @@
         });
 
         window.addEventListener('keyup', e => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-            const key = e.key.toLowerCase();
+            if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
 
-            if (key === 'g') {
+            if (e.key.toLowerCase() === 'g') {
                 isGKeyPressed = false;
-                if (!hasScrolledWithG) {
-                    toggleGrid();
-                }
+                if (!hasScrolledWithG) toggleGrid();
             }
         });
 
+        /** Zoom & Grid Division scroll handler. */
         viewport.addEventListener('wheel', (e) => {
             e.preventDefault();
-
             if (isGKeyPressed) {
                 hasScrolledWithG = true;
                 if (!showGrid) showGrid = true;
@@ -1189,48 +1350,445 @@
                 draw();
                 return;
             }
-
-            const delta = e.deltaY > 0 ? -0.2 : 0.2;
-            changeZoom(delta, e);
+            changeZoom(e.deltaY > 0 ? -0.2 : 0.2, e);
         }, { passive: false });
 
-        function filterTiles() {
-            const query = document.getElementById('tileSearch').value.toLowerCase();
-            document.querySelectorAll('.palette img').forEach(el => {
-                const name = (el.title || "").toLowerCase();
-                el.style.display = name.includes(query) ? 'block' : 'none';
+        /******************************************************************
+        * 6. PHOTO TO BLOCKS CONVERSION (IMAGE RECREATION)
+       ******************************************************************/
+
+        /**
+         * Initialize Photo Preview Pan/Zoom listeners.
+         */
+        function initPhotoPreviewControls() {
+            previewContainer.onwheel = (e) => {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                pZoom = Math.min(Math.max(0.1, pZoom + delta), 10);
+                updatePhotoTransform();
+            };
+
+            previewContainer.onmousedown = (e) => {
+                if (e.button === 0) isPanningPhoto = true;
+            };
+
+            window.addEventListener('mousemove', (e) => {
+                if (isPanningPhoto) {
+                    pPanX += e.movementX;
+                    pPanY += e.movementY;
+                    updatePhotoTransform();
+                }
+            });
+
+            window.addEventListener('mouseup', () => {
+                isPanningPhoto = false;
             });
         }
 
-        document.getElementById('bgUpload').onchange = (e) => {
+        function updatePhotoTransform() {
+            previewCanvas.style.transform = `translate3d(${pPanX}px, ${pPanY}px, 0) scale(${pZoom})`;
+        }
+
+        function resetPhotoTransform() {
+            pZoom = 1.0; pPanX = 0; pPanY = 0;
+            updatePhotoTransform();
+        }
+
+        /**
+         * Handles the dimension input changes and ratio locking.
+         * Updates the UI ratio text in real-time.
+         */
+        function handleDimensionChange(axis) {
+            let targetW = parseInt(targetWInput.value);
+            let targetH = parseInt(targetHInput.value);
+
+            if (isNaN(targetW) || isNaN(targetH)) return;
+
+            if (isRatioLocked && activeProcessingImg) {
+                if (axis === 'w') {
+                    targetH = Math.round(targetW / originalImgRatio);
+                    targetHInput.value = targetH;
+                } else {
+                    targetW = Math.round(targetH * originalImgRatio);
+                    targetWInput.value = targetW;
+                }
+            }
+
+            updateRatioText();
+        }
+
+        /**
+         * Toggles the aspect ratio lock state.
+         */
+        function toggleRatioLock() {
+            isRatioLocked = !isRatioLocked;
+            lockRatioBtn.innerText = `Lock Ratio: ${isRatioLocked ? 'On' : 'Off'}`;
+            lockRatioBtn.classList.toggle('active', isRatioLocked);
+
+            // Re-sync if locking was just turned on
+            if (isRatioLocked) handleDimensionChange('w');
+        }
+
+        /**
+         * Updates the displayed calculated ratio text.
+         */
+        function updateRatioText() {
+            const w = parseInt(targetWInput.value) || 1;
+            const h = parseInt(targetHInput.value) || 1;
+            const currentRatio = (w / h).toFixed(2);
+            ratioDisplay.innerText = `Current: ${currentRatio}:1`;
+        }
+
+        /**
+         * Handles the image import and opens the processing modal.
+         * Resetting input value allows for repeated use of the same file.
+         */
+        photoImport.onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
+
             const reader = new FileReader();
             reader.onload = (ev) => {
                 const img = new Image();
-                img.onload = () => { bgImage = img; draw(); };
+                img.onload = () => {
+                    activeProcessingImg = img;
+                    originalImgRatio = img.width / img.height;
+
+                    // Set reference text
+                    originalRatioDisplay.innerText = `Original: ${originalImgRatio.toFixed(2)}:1`;
+
+                    // Set default Y and calculate X based on ratio
+                    const defaultH = 57;
+                    let calculatedW = Math.round(defaultH * originalImgRatio);
+
+                    // Cap at map dimensions
+                    if (calculatedW > 100) calculatedW = 100;
+
+                    targetWInput.value = calculatedW;
+                    targetHInput.value = defaultH;
+
+                    updateRatioText();
+
+                    photoModal.style.display = 'flex';
+                    resetPhotoTransform();
+                    updateConversionPreview();
+                };
                 img.src = ev.target.result;
             };
             reader.readAsDataURL(file);
+
+            // Clear input so onchange fires even if same file is picked again
+            e.target.value = '';
         };
 
-        document.getElementById('tileUpload').onchange = (e) => {
-            Array.from(e.target.files).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const img = document.createElement('img');
-                    img.src = ev.target.result;
-                    img.title = file.name.replace(".png", "").replace(".jpg", "");
-                    img.onclick = () => selectTile(img.src, img);
-                    document.getElementById('tilePalette').appendChild(img);
+        /**
+         * Updates the internal preview within the modal.
+         */
+        async function updateConversionPreview() {
+            if (!activeProcessingImg) return;
 
-                    // Add to cache immediately
-                    imgCache[img.src] = new Image();
-                    imgCache[img.src].src = img.src;
-                };
-                reader.readAsDataURL(file);
+            // Enforce caps: COLS (100) and ROWS (60)
+            let targetW = Math.min(100, Math.max(1, parseInt(targetWInput.value)));
+            let targetH = Math.min(60, Math.max(1, parseInt(targetHInput.value)));
+
+            targetWInput.value = targetW;
+            targetHInput.value = targetH;
+
+            if (isNaN(targetW) || isNaN(targetH)) return;
+
+            // Refresh ratio text to ensure sync
+            updateRatioText();
+
+            const paletteData = await analyzePalette();
+            if (paletteData.length === 0) return;
+
+            // Generate the grid tiles
+            currentProcessedTiles = await generateTileData(activeProcessingImg, targetW, targetH, paletteData);
+
+            // Render the preview canvas
+            previewCanvas.width = targetW * TILE_SIZE;
+            previewCanvas.height = targetH * TILE_SIZE;
+            pCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+
+            currentProcessedTiles.forEach(tile => {
+                if (!tile.data) return;
+                const cachedImg = imgCache[tile.data.src];
+                if (cachedImg && cachedImg.complete) {
+                    pCtx.drawImage(cachedImg, tile.offsetX * TILE_SIZE, tile.offsetY * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                }
             });
-        };
+        }
+
+        /**
+         * Closes the modal and resets the processing state.
+         */
+        function closePhotoModal() {
+            photoModal.style.display = 'none';
+            activeProcessingImg = null;
+            currentProcessedTiles = [];
+
+            // Reset ratio lock UI
+            isRatioLocked = false;
+            lockRatioBtn.innerText = "Lock Ratio: Off";
+            lockRatioBtn.classList.remove('active');
+        }
+
+        /**
+         * Finalizes the conversion and loads tiles into the clipboard.
+         */
+        function confirmPhotoImport() {
+            if (currentProcessedTiles.length === 0) return;
+
+            clipboard = {
+                tiles: currentProcessedTiles,
+                width: parseInt(targetWInput.value),
+                height: parseInt(targetHInput.value),
+                originX: 0,
+                originY: 0
+            };
+
+            setTool('select');
+            showPastePreview = true;
+            closePhotoModal();
+            draw();
+        }
+
+        /**
+         * Processes image data into a tile list.
+         */
+        async function generateTileData(sourceImg, targetW, targetH, paletteData) {
+            const offCanvas = document.createElement('canvas');
+            const offCtx = offCanvas.getContext('2d');
+            offCanvas.width = targetW;
+            offCanvas.height = targetH;
+            offCtx.drawImage(sourceImg, 0, 0, targetW, targetH);
+
+            const pixelData = offCtx.getImageData(0, 0, targetW, targetH).data;
+            const generatedTiles = [];
+
+            for (let y = 0; y < targetH; y++) {
+                for (let x = 0; x < targetW; x++) {
+                    const idx = (y * targetW + x) * 4;
+                    const r = pixelData[idx];
+                    const g = pixelData[idx + 1];
+                    const b = pixelData[idx + 2];
+                    const a = pixelData[idx + 3];
+
+                    if (a < 128) {
+                        generatedTiles.push({ offsetX: x, offsetY: y, data: null });
+                        continue;
+                    }
+
+                    const closestTileSrc = findClosestTile(r, g, b, paletteData);
+                    generatedTiles.push({
+                        offsetX: x,
+                        offsetY: y,
+                        data: { src: closestTileSrc, rotation: 0, flipped: false }
+                    });
+                }
+            }
+            return generatedTiles;
+        }
+
+        /**
+         * Analyzes all tiles currently in the palette.
+         * Filters out tiles that have transparency (holes) and calculates average RGB.
+         */
+        async function analyzePalette() {
+            const results = [];
+            const imgs = document.querySelectorAll('#tilePalette img');
+
+            const sampleCanvas = document.createElement('canvas');
+            const sCtx = sampleCanvas.getContext('2d', { willReadFrequently: true });
+            sampleCanvas.width = sampleCanvas.height = 16; // Small sample for speed
+
+            for (const img of imgs) {
+                sCtx.clearRect(0, 0, 16, 16);
+                sCtx.drawImage(img, 0, 0, 16, 16);
+                const data = sCtx.getImageData(0, 0, 16, 16).data;
+
+                let r = 0, g = 0, b = 0, solidCount = 0;
+                let isSolid = true;
+
+                for (let i = 0; i < data.length; i += 4) {
+                    // "Hole" detection: If any sampled pixel is transparent, we reject the block
+                    if (data[i + 3] < 255) {
+                        isSolid = false;
+                        break;
+                    }
+                    r += data[i];
+                    g += data[i + 1];
+                    b += data[i + 2];
+                    solidCount++;
+                }
+
+                if (isSolid && solidCount > 0) {
+                    results.push({
+                        src: img.src,
+                        r: r / solidCount,
+                        g: g / solidCount,
+                        b: b / solidCount
+                    });
+                }
+            }
+            return results;
+        }
+
+        /**
+         * Uses Euclidean distance to find the tile that matches the target RGB best.
+         */
+        function findClosestTile(tr, tg, tb, palette) {
+            let minDistance = Infinity;
+            let closestSrc = palette[0].src;
+
+            for (const tile of palette) {
+                const d = Math.sqrt(
+                    Math.pow(tr - tile.r, 2) +
+                    Math.pow(tg - tile.g, 2) +
+                    Math.pow(tb - tile.b, 2)
+                );
+                if (d < minDistance) {
+                    minDistance = d;
+                    closestSrc = tile.src;
+                }
+            }
+            return closestSrc;
+        }
+
+        /******************************************************************
+         * 7. I/O & STATE MANAGEMENT
+         ******************************************************************/
+        function showLoading(text) {
+            loadingText.innerText = text;
+            progressBar.style.width = '0%';
+            loadingOverlay.style.display = 'flex';
+            loadingOverlay.style.opacity = '1';
+        }
+
+        function hideLoading() {
+            loadingOverlay.style.opacity = '0';
+            setTimeout(() => loadingOverlay.style.display = 'none', 500);
+        }
+
+        function saveToCache() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                try {
+                    const manifest = [];
+                    const srcToId = {};
+
+                    const getTileId = (src) => {
+                        if (srcToId[src] === undefined) {
+                            srcToId[src] = manifest.length;
+                            manifest.push(src);
+                        }
+                        return srcToId[src];
+                    };
+
+                    const compressLayer = (layer) => {
+                        const compressed = {};
+                        if (!layer) return compressed;
+                        for (let coord in layer) {
+                            const tile = layer[coord];
+                            // Save ONLY the base source map to retain grouping naturally
+                            compressed[coord] = {
+                                i: getTileId(tile.src),
+                                r: tile.rotation,
+                                f: tile.flipped ? 1 : 0
+                            };
+                        }
+                        return compressed;
+                    };
+
+                    const payload = {
+                        v: 2,
+                        m: manifest,
+                        bg: compressLayer(mapData.background),
+                        fg: compressLayer(mapData.foreground),
+                        wt: compressLayer(mapData.water)
+                    };
+
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+                } catch (e) {
+                    console.warn("Storage limit exceeded.");
+                }
+            }, 1000);
+        }
+
+        function loadFromCache() {
+            const cached = localStorage.getItem(STORAGE_KEY);
+            if (!cached) return false;
+
+            try {
+                const parsed = JSON.parse(cached);
+
+                if (!parsed.v || parsed.v < 2) {
+                    if (parsed.background && parsed.foreground) {
+                        mapData = {
+                            background: parsed.background,
+                            foreground: parsed.foreground,
+                            water: parsed.water || {}
+                        };
+                        return true;
+                    }
+                    return false;
+                }
+                const manifest = parsed.m;
+                const decompressLayer = (compressed) => {
+                    const layer = {};
+                    if (!compressed) return layer;
+                    for (let coord in compressed) {
+                        const tile = compressed[coord];
+                        layer[coord] = {
+                            src: manifest[tile.i],
+                            rotation: tile.r,
+                            flipped: tile.f === 1
+                        };
+                    }
+                    return layer;
+                };
+
+                mapData = {
+                    background: decompressLayer(parsed.bg),
+                    foreground: decompressLayer(parsed.fg),
+                    water: decompressLayer(parsed.wt)
+                };
+
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function saveState() {
+            history.push(JSON.stringify(mapData));
+            if (history.length > 30) history.shift();
+            redoStack = [];
+            saveToCache();
+        }
+
+        function undo() {
+            if (history.length > 0) {
+                redoStack.push(JSON.stringify(mapData));
+                mapData = JSON.parse(history.pop());
+                draw();
+                saveToCache();
+            }
+        }
+
+        function redo() {
+            if (redoStack.length > 0) {
+                history.push(JSON.stringify(mapData));
+                mapData = JSON.parse(redoStack.pop());
+                draw();
+                saveToCache();
+            }
+        }
+
+        function saveAsPNG() {
+            const a = document.createElement('a'); a.download = 'world_render.png';
+            a.href = canvas.toDataURL(); a.click();
+        }
 
         function exportMapFile() {
             const dataStr = JSON.stringify(mapData);
@@ -1243,131 +1801,19 @@
             URL.revokeObjectURL(url);
         }
 
-        document.getElementById('mapImport').onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            // Show loading screen during import
-            showLoading("Importing World Data...");
-
-            const reader = new FileReader();
-            reader.onload = async (ev) => {
-                try {
-                    const importedData = JSON.parse(ev.target.result);
-                    if (importedData.background && importedData.foreground) {
-                        saveState();
-                        mapData = {
-                            background: importedData.background,
-                            foreground: importedData.foreground,
-                            water: importedData.water || {}
-                        };
-
-                        // Fix: Pre-load the imported tiles so shadows show immediately
-                        await prewarmMapCache();
-
-                        draw();
-                        saveToCache();
-
-                        // Give a small delay for the UI to feel responsive
-                        setTimeout(hideLoading, 500);
-                    } else {
-                        hideLoading();
-                        alert("Invalid map file format.");
-                    }
-                } catch (err) {
-                    hideLoading();
-                    alert("Error reading file: " + err.message);
-                }
-            };
-            reader.readAsText(file);
-        };
-
-        function toggleGrid() {
-            showGrid = !showGrid;
-            gridParts = 0;
-            draw();
-        }
-
-        function changeZoom(delta, e) {
-            const oldZoom = zoom;
-            zoom = Math.min(Math.max(0.4, zoom + delta), 10);
-            if (e) {
-                const vRect = viewport.getBoundingClientRect();
-                const mouseX = e.clientX - (vRect.left + vRect.width / 2);
-                const mouseY = e.clientY - (vRect.top + vRect.height / 2);
-                const ratio = zoom / oldZoom;
-                panX = mouseX - (mouseX - panX) * ratio;
-                panY = mouseY - (mouseY - panY) * ratio;
-            }
-            updateTransform();
-        }
-
-        function updateTransform() {
-            canvas.style.transform = `translate3d(${panX}px, ${panY}px, 0) scale(${zoom})`;
-        }
-
-        function rotateTile() {
-            rotation = (rotation + 90) % 360;
-            document.getElementById('rotation').innerText = `Rot: ${rotation}°`;
-        }
-
-        function flipTile() {
-            flipped = !flipped;
-            document.getElementById('mirror').innerText = `Mirror: ${(flipped) ? "On" : "Off"}`;
-        }
-
-        function toggleLayer() {
-            let label = "Block";
-            if (currentLayer === "foreground") {
-                currentLayer = "background";
-                label = "BG";
-            } else if (currentLayer === "water") {
-                currentLayer = "foreground";
-                label = "Block";
-            } else {
-                currentLayer = "water";
-                label = "Water";
-            }
-            document.getElementById('layerSelect').innerText = `${label} Layer`;
-            selectionRect = null;
-            draw();
-        }
-
-        function showInfo() {
-            isInfoVisible = !isInfoVisible;
-            document.getElementById("myForm").style.display = (isInfoVisible) ? "block" : "none";
-        }
-
-        function clearMap() {
-            if (confirm("Clear?")) {
-                saveState();
-                mapData = { background: {}, foreground: {}, water: {} };
-                addBedrockLayers();
-                saveToCache();
-            }
-        }
-
-        function saveAsPNG() {
-            const a = document.createElement('a'); a.download = 'world_render.png';
-            a.href = canvas.toDataURL(); a.click();
-        }
-
         function exportTileList() {
             const counts = {};
-            const paletteItems = document.querySelectorAll('#tilePalette > *');
-            const nameLookup = {};
-            paletteItems.forEach(item => {
-                const src = item.src;
-                if (src) nameLookup[src] = item.title;
-            });
-
             const layers = ['background', 'foreground', 'water'];
+
             layers.forEach(layerName => {
                 const layer = mapData[layerName];
                 if (!layer) return;
+
                 for (let coord in layer) {
                     const tile = layer[coord];
-                    const name = (nameLookup[tile.src] || "Unknown");
+                    // Since we only ever store the base tile src in mapData, 
+                    // autotile variants natively bundle and count under the base block!
+                    const name = (tileNameLookup[tile.src] || "Unknown");
                     counts[name] = (counts[name] || 0) + 1;
                 }
             });
@@ -1386,41 +1832,97 @@
             URL.revokeObjectURL(url);
         }
 
-        function addBedrockLayers() {
-            saveState();
-            const paletteItems = document.querySelectorAll('#tilePalette img');
-            let bedrockSrc = null;
+        bgUpload.onchange = (e) => {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => { bgImage = img; draw(); };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
 
-            paletteItems.forEach(img => {
-                if (img.title.toLowerCase() === 'bedrock') {
-                    bedrockSrc = img.src;
-                }
+        tileUpload.onchange = (e) => {
+            Array.from(e.target.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const src = ev.target.result;
+                    const tileName = file.name.split('.')[0];
+                    tileNameLookup[src] = tileName;
+
+                    // Check for autotiling variants
+                    const nameMatches = tileName.match(/^(.*)_(\d+)$/);
+
+                    if (nameMatches) {
+                        const baseName = nameMatches[1];
+                        const mask = nameMatches[2];
+
+                        if (!autotileMap[baseName]) autotileMap[baseName] = {};
+                        autotileMap[baseName][mask] = src;
+
+                        imgCache[src] = new Image();
+                        imgCache[src].src = src;
+                    } else {
+                        // Add to standard visible palette
+                        const img = document.createElement('img');
+                        img.src = src;
+                        img.title = tileName;
+                        img.onclick = () => selectTile(img.src, img);
+                        tilePalette.appendChild(img);
+
+                        imgCache[src] = new Image();
+                        imgCache[src].src = src;
+                    }
+                };
+                reader.readAsDataURL(file);
             });
+        };
 
-            if (!bedrockSrc) {
-                console.log("Bedrock tile not found.");
-                draw();
-                return;
-            }
+        mapImport.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            showLoading("Importing World Data...");
 
-            for (let x = 0; x < COLS; x++) {
-                for (let y = ROWS - 3; y < ROWS; y++) {
-                    mapData.foreground[`${x},${y}`] = {
-                        src: bedrockSrc,
-                        rotation: 0,
-                        flipped: false
-                    };
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                try {
+                    const importedData = JSON.parse(ev.target.result);
+                    if (importedData.background && importedData.foreground) {
+                        saveState();
+                        mapData = {
+                            background: importedData.background,
+                            foreground: importedData.foreground,
+                            water: importedData.water || {}
+                        };
+
+                        await prewarmMapCache();
+
+                        draw();
+                        saveToCache();
+
+                        setTimeout(hideLoading, 500);
+                    } else {
+                        hideLoading();
+                        alert("Invalid map file format.");
+                    }
+                } catch (err) {
+                    hideLoading();
+                    alert("Error reading file: " + err.message);
                 }
-            }
-            draw();
-            saveToCache();
-            console.log("Added 3 layers of Bedrock to the bottom.");
+            };
+            reader.readAsText(file);
+        };
+
+        function showInfo() {
+            isInfoVisible = !isInfoVisible;
+            infoForm.style.display = (isInfoVisible) ? "block" : "none";
         }
 
         function displayPopUp(body = "", header = "", end = "") {
-            document.getElementById('headerText').innerText = header;
-            document.getElementById('bodyText').innerText = body;
-            document.getElementById('endText').innerText = end;
+            headerTextEl.innerText = header;
+            bodyTextEl.innerText = body;
+            endTextEl.innerText = end;
             showInfo();
         }
 
@@ -1433,8 +1935,8 @@
 
         function showWebsiteInfo() {
             displayPopUp(
-                "Latest Features: \n Pre-rendered textures, \n adjusting grid division, \n copy visuals, \n cut and paste, \n water layer without water, \n shadows! \n\n If you have suggestions, \n dm me in discord!",
-                "Version 1.8",
+                "Latest Features: \n Pre-rendering textures, \n more blocks, a secret feature, \n some autotiling! \n\n If you have suggestions, \n dm me in discord!",
+                "Version 2.0",
                 "Website by: Onyx"
             );
         }
