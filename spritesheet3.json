@@ -1,0 +1,37 @@
+{
+    "meta": {
+        "image": "spritesheet3.png",
+        "size": {
+            "w": 68,
+            "h": 34
+        },
+        "tile_size": {
+            "w": 34,
+            "h": 34
+        }
+    },
+    "frames": {
+        "Yellow Door": {
+            "frame": {
+                "x": 0,
+                "y": 0,
+                "w": 34,
+                "h": 34
+            },
+            "index": 0,
+            "layerPosition": "",
+            "Category": []
+        },
+        "Yellow Dotted Wallpaper": {
+            "frame": {
+                "x": 34,
+                "y": 0,
+                "w": 34,
+                "h": 34
+            },
+            "index": 1,
+            "layerPosition": "",
+            "Category": []
+        }
+    }
+}
