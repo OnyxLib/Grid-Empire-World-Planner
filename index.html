@@ -707,7 +707,9 @@
             const variants = autotileMap[tileName];
 
             /**
-             * Determine which bits are supported by this specific tile type.
+             * Determine Capability:
+             * We calculate which bits this specific tile set actually supports by 
+             * OR-ing all keys available in its variant map.
              */
             const variantKeys = Object.keys(variants).map(Number);
             let supportedMask = 0;
@@ -715,48 +717,55 @@
                 supportedMask |= variantKeys[i];
             }
 
-            /*
-            * Helper to verify matching adjacent block.
-            */
-            const isRelevantNeighbor = (nx, ny, bit) => {
-                // If the autotileMap for this tile never uses this bit, ignore the neighbor
-                if (!(supportedMask & bit)) return false;
-
+            /**
+             * Helper: Check if a neighbor is the same tile type.
+             * Tiling is strictly based on source matching.
+             */
+            const isSameTile = (nx, ny) => {
                 const nTile = layerObj[`${nx},${ny}`];
                 return nTile && nTile.src === baseSrc;
             };
 
-            // Cardinal neighbors - only true if neighbor matches AND tile supports the direction
-            const N = isRelevantNeighbor(x, y - 1, 2);
-            const W = isRelevantNeighbor(x - 1, y, 8);
-            const E = isRelevantNeighbor(x + 1, y, 16);
-            const S = isRelevantNeighbor(x, y + 1, 64);
+            // 1. Check physical neighbor presence (Cardinal & Corners)
+            const N = isSameTile(x, y - 1);
+            const W = isSameTile(x - 1, y);
+            const E = isSameTile(x + 1, y);
+            const S = isSameTile(x, y + 1);
+            const NW = isSameTile(x - 1, y - 1);
+            const NE = isSameTile(x + 1, y - 1);
+            const SW = isSameTile(x - 1, y + 1);
+            const SE = isSameTile(x + 1, y + 1);
 
-            // Corner neighbors - only true if neighbor matches AND tile supports the direction
-            const NW = isRelevantNeighbor(x - 1, y - 1, 1);
-            const NE = isRelevantNeighbor(x + 1, y - 1, 4);
-            const SW = isRelevantNeighbor(x - 1, y + 1, 32);
-            const SE = isRelevantNeighbor(x + 1, y + 1, 128);
-
-            // 1. Calculate the 4-bit Cardinal Mask (N=2, W=8, E=16, S=64)
+            // 2. Build the 8-bit cardinal mask (N:2, W:8, E:16, S:64)
             let cardinalMask = 0;
             if (N) cardinalMask |= 2;
             if (W) cardinalMask |= 8;
             if (E) cardinalMask |= 16;
             if (S) cardinalMask |= 64;
 
-            // 2. Calculate the 8-bit Full Mask (Adding corner constraints)
+            // 3. Apply Blob constraints for 8-bit corners
+            // A corner bit is only valid if both adjacent cardinal sides are also present.
             let fullMask = cardinalMask;
             if (NW && N && W) fullMask |= 1;
             if (NE && N && E) fullMask |= 4;
             if (SW && S && W) fullMask |= 32;
             if (SE && S && E) fullMask |= 128;
 
-            // 3. Lookup Strategy: Try 8-bit first, fallback to 4-bit
-            let finalSrc = variants[fullMask] || variants[cardinalMask];
+            /**
+             * 4. Capability Filtering:
+             * We mask the 'fullMask' against the 'supportedMask'. This is the critical fix.
+             * If this is a 4-bit tile, the corner bits (1, 4, 32, 128) are stripped away here,
+             * ensuring the lookup matches the 4-bit keys (e.g., 2, 8, 10...) even if
+             * physical corner neighbors exist.
+             */
+            const finalMask = fullMask & supportedMask;
 
-            // Return the specific autotile variant if it exists, otherwise fallback to base
-            return finalSrc || baseSrc;
+            /**
+             * 5. Lookup Strategy:
+             * Try the filtered mask first. If the specific combination doesn't exist,
+             * fallback to the cardinal-only version, then finally the base source.
+             */
+            return variants[finalMask] || variants[cardinalMask & supportedMask] || baseSrc;
         }
 
         function draw() {
@@ -1935,7 +1944,7 @@
 
         function showWebsiteInfo() {
             displayPopUp(
-                "Latest Features: \n Pre-rendering textures, \n more blocks, a WIP secret feature, \n some autotiling! \n\n If you have suggestions, \n dm me in discord!",
+                "Latest Features: \n Pre-rendering textures, \n more blocks, a secret feature, \n some autotiling! \n\n If you have suggestions, \n dm me in discord!",
                 "Version 2.0",
                 "Website by: Onyx"
             );
