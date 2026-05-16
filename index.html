@@ -73,14 +73,18 @@
 
         /* --- Sidebar & Controls --- */
         .sidebar {
-            width: 320px;
+            width: 210px;
             background: var(--panel-bg);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             padding: 15px;
-            overflow-y: hidden;
+            overflow-y: auto;
             overflow-x: hidden;
+            flex-shrink: 0;
+            box-sizing: border-box;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
 
         h4 {
@@ -267,7 +271,6 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            /* Changed to hidden for pan/zoom control */
             position: relative;
             cursor: grab;
         }
@@ -369,13 +372,11 @@
             <h4>Tools & Layers</h4>
             <button id="layerSelect" onclick="toggleLayer()">Block Layer</button>
             <div class="trip-control-row">
-                <button id="btnBrush" onclick="setTool('brush')">Brush</button>
+                <button id="btnBrush" class="active" onclick="setTool('brush')">Brush</button>
                 <button id="btnBucket" onclick="setTool('bucket')">Fill</button>
-                <button id="btnPan" class="active" onclick="setTool('pan')">Pan</button>
-            </div>
-            <div class="trip-control-row">
                 <button id="btnSelect" onclick="setTool('select')">Select</button>
             </div>
+
 
             <h4>Brush Size</h4>
             <select id="brushSize">
@@ -460,7 +461,6 @@
         const layerSelectBtn = document.getElementById('layerSelect');
         const btnBrush = document.getElementById('btnBrush');
         const btnBucket = document.getElementById('btnBucket');
-        const btnPan = document.getElementById('btnPan');
         const btnSelect = document.getElementById('btnSelect');
         const infoForm = document.getElementById('myForm');
         const headerTextEl = document.getElementById('headerText');
@@ -498,7 +498,7 @@
         let history = [], redoStack = [];
         let selectedTileData = null;
         let currentLayer = "foreground";
-        let tool = 'pan';
+        let tool = 'brush';
 
         /* Transform & UI State */
         let zoom = 1.00, rotation = 0, flipped = false, showGrid = true;
@@ -885,8 +885,6 @@
                     const img = new Image();
                     img.src = srcToRender;
                     imgCache[srcToRender] = img;
-                    // Note: We don't await here to keep rendering performance high; 
-                    // prewarmMapCache handles the initial loading.
                 }
 
                 const cachedImg = imgCache[srcToRender];
@@ -949,19 +947,26 @@
 
             btnBrush.classList.toggle('active', t === 'brush');
             btnBucket.classList.toggle('active', t === 'bucket');
-            btnPan.classList.toggle('active', t === 'pan');
             btnSelect.classList.toggle('active', t === 'select');
 
             if (t !== 'select') selectionRect = null;
-            canvas.style.cursor = (t === 'pan') ? 'grab' : 'crosshair';
+            canvas.style.cursor = 'crosshair';
             draw();
         }
 
-        /** Standard flood fill algorithm for the Bucket tool. */
-        function floodFill(startX, startY) {
+        /** * Standard flood fill algorithm for the Bucket tool. 
+         * Supports normal coloring and right-click erase filling.
+         * @param {number} startX - Starting grid X coordinate
+         * @param {number} startY - Starting grid Y coordinate
+         * @param {boolean} isErase - True if filling with transparent/nothing (deleting tiles)
+         */
+        function floodFill(startX, startY, isErase = false) {
             const layer = mapData[currentLayer];
             const target = layer[`${startX},${startY}`]?.src || null;
-            if (target === selectedTileData) return;
+
+            // Prevent infinite loops or redundant operations
+            if (isErase && target === null) return;
+            if (!isErase && target === selectedTileData) return;
 
             const queue = [[startX, startY]];
             while (queue.length > 0) {
@@ -970,7 +975,11 @@
                 if (x < 0 || x >= COLS || y < 0 || y >= ROWS) continue;
                 if ((layer[key]?.src || null) !== target) continue;
 
-                layer[key] = { src: selectedTileData, rotation, flipped };
+                if (isErase) {
+                    delete layer[key];
+                } else {
+                    layer[key] = { src: selectedTileData, rotation, flipped };
+                }
                 queue.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
             }
             saveToCache();
@@ -1134,13 +1143,17 @@
             document.querySelectorAll('.palette img, .palette .color-tile').forEach(i => i.classList.remove('selected'));
             el.classList.add('selected');
             selectedTileData = src;
+            rotation = 0;
+            flipped = false;
+            rotationBtn.innerText = `Rot: 0°`;
+            mirrorBtn.innerText = `Mirror: Off`;
         }
 
         function toggleGrid() { showGrid = !showGrid; gridParts = 0; draw(); }
 
         function changeZoom(delta, e) {
             const oldZoom = zoom;
-            zoom = Math.min(Math.max(0.4, zoom + delta), 10);
+            zoom = Math.min(Math.max(0.3, zoom + delta), 10);
             if (e) {
                 const vRect = viewport.getBoundingClientRect();
                 const mouseX = e.clientX - (vRect.left + vRect.width / 2);
@@ -1176,7 +1189,19 @@
                 coordDisplay.innerText = `Tile Position: (${mouseX}, ${(ROWS - 1) - mouseY})`;
             }
 
-            /* --- Tool Logic --- */
+            /* --- Tool Logic & Global Controls --- */
+
+            // Middle Mouse Button Panning Intercept (Triggers globally, regardless of tool)
+            if (e.buttons === 4 || (e.type === 'mousedown' && e.button === 1)) {
+                if (e.button === 1) e.preventDefault(); // Defuses standard auto-scroll browser logic
+                canvas.style.cursor = 'grabbing';
+                if (e.type === 'mousemove') {
+                    panX += e.movementX;
+                    panY += e.movementY;
+                    updateTransform();
+                }
+                return;
+            }
 
             // Eyedropper: Samples base tile data from the current layer
             if (e.altKey && e.buttons === 1 && e.type === 'mousedown') {
@@ -1200,17 +1225,6 @@
                     // Force brush tool for immediate use
                     setTool('brush');
                 }
-                return;
-            }
-
-            if (tool === 'pan' && e.buttons === 1) {
-                canvas.style.cursor = 'grabbing';
-                panX += e.movementX;
-                panY += e.movementY;
-                updateTransform();
-                return;
-            } else if (tool === 'pan') {
-                canvas.style.cursor = 'grab';
                 return;
             }
 
@@ -1245,8 +1259,12 @@
                 lastY = mouseY;
             }
 
-            if (tool === 'bucket' && e.buttons === 1) {
-                floodFill(mouseX, mouseY);
+            if (tool === 'bucket') {
+                if (e.buttons === 1) {
+                    floodFill(mouseX, mouseY, false);
+                } else if (e.buttons === 2) {
+                    floodFill(mouseX, mouseY, true);
+                }
             } else if (tool === 'brush' && !e.altKey) {
                 const dx = Math.abs(mouseX - lastX);
                 const dy = Math.abs(mouseY - lastY);
@@ -1284,6 +1302,28 @@
             if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
             const key = e.key.toLowerCase();
 
+            // Handle backspace or delete shortcut to remove tiles within the selected bounds
+            if ((e.key === 'Delete' || e.key === 'Backspace') && tool === 'select' && selectionRect) {
+                e.preventDefault();
+                saveState();
+
+                const xMin = Math.min(selectionRect.x1, selectionRect.x2);
+                const xMax = Math.max(selectionRect.x1, selectionRect.x2);
+                const yMin = Math.min(selectionRect.y1, selectionRect.y2);
+                const yMax = Math.max(selectionRect.y1, selectionRect.y2);
+
+                const layer = mapData[currentLayer];
+                for (let x = xMin; x <= xMax; x++) {
+                    for (let y = yMin; y <= yMax; y++) {
+                        delete layer[`${x},${y}`];
+                    }
+                }
+
+                draw();
+                saveToCache();
+                return;
+            }
+
             if (key === 'g' && !e.repeat) {
                 isGKeyPressed = true;
                 hasScrolledWithG = false;
@@ -1314,7 +1354,6 @@
                     case 'm': flipTile(); break;
                     case 'b': setTool('brush'); break;
                     case 's': setTool('select'); break;
-                    case 'p': setTool('pan'); break;
                     case 'f': setTool('bucket'); break;
                     case 'l': toggleLayer(); break;
                     case 'c': clearMap(); break;
@@ -1795,8 +1834,11 @@
         }
 
         function saveAsPNG() {
-            const a = document.createElement('a'); a.download = 'world_render.png';
-            a.href = canvas.toDataURL(); a.click();
+            showGrid = false; draw();
+            const a = document.createElement('a');
+            a.download = 'world_render.png';
+            a.href = canvas.toDataURL();
+            a.click();
         }
 
         function exportMapFile() {
@@ -1937,15 +1979,15 @@
 
         function showKeybind() {
             displayPopUp(
-                "Draw: Left Click \n Erase: Right Click \n Zoom: Scroll Wheel \n Eyedropper: Alt + Left Click \n Undo: Ctrl + z \n Redo: Ctrl + Shift + z \n Copy: Ctrl + c \n Cut: Ctrl + x \n Paste: Ctrl + v \n Export Block List: Ctrl + b \n brush: b \n Select: s \n Pan: p \n Fill: f \n Rotate: r \n Mirror: m \n Toggle Grid: g \n Adjust Grid: hold g and scroll \n Toggle Layer: l \n Clear World: c \n Add Bedrock Layer: d \n Save World Image: i \n Info: w \n Keybind: k",
+                "Draw: Left Click \n Erase: Right Click \n Zoom: Scroll Wheel \n Pan: Hold Middle Mouse Button \n Eyedropper: Alt + Left Click \n Undo: Ctrl + z \n Redo: Ctrl + Shift + z \n Copy: Ctrl + c \n Cut: Ctrl + x \n Paste: Ctrl + v \n Export Block List: Ctrl + b \n brush: b \n Select: s \n Fill: f \n Rotate: r \n Mirror: m \n Toggle Grid: g \n Adjust Grid: hold g and scroll \n Toggle Layer: l \n Clear World: c \n Add Bedrock Layer: d \n Save World Image: i \n Info: w \n Keybind: k",
                 "Keybinds:",
             );
         }
 
         function showWebsiteInfo() {
             displayPopUp(
-                "Latest Features: \n Pre-rendering textures, \n more blocks, a secret feature, \n some autotiling! \n\n If you have suggestions, \n dm me in discord!",
-                "Version 2.0",
+                "Latest Features: \n QoL, \n pan is middle \n mouse now. \n\n If you have suggestions, \n dm me in discord!",
+                "Version 2.1",
                 "Website by: Onyx"
             );
         }

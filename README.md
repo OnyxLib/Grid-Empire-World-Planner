@@ -39,8 +39,8 @@ Disclaimer: AI was used in the making of this application.
 - Import map file
 - Eyedropper tool
 - keybinds
-- autotiling
-- secret features
+- autotiling (incomplete)
+- secret feature
 
 ## Future Plans
 - [ ] Add all the tiles and backgrounds when the redesign is complete
