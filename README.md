@@ -25,20 +25,21 @@ Disclaimer: AI was used in the making of this application.
 4. (optional) You can upload custom tiles and backgrounds into the program by adding it to the tiles and backgrounds folder. 
 5. (optional) If you do not want to run this program in your machine, please look into sandboxes/virtual machines. I recommend this from [Windows](https://learn.microsoft.com/en-us/windows/security/application-security/application-isolation/windows-sandbox/).
 ## Website Features
-- 100x60 Tile map with some of the tiles in the game
-- import tiles and backgrounds
-- search, rotate, mirror tiles
+- 100x60 Tilemap with most of the blocks in the game
+- import blocks and backgrounds
+- search, rotate, mirror
 - 1x1 to 5x5 brush sizes
-- fill, select tool
+- fill, select, replace
 - copy, cut, and paste
 - toggle grid and layers
 - undo, redo
 - clear map
-- select tile from tile map
+- select block from tilemap
 - Exportable map render, map file, list of blocks
 - Import map file
 - Eyedropper tool
 - keybinds
+- recently used blocks
 - autotiling (incomplete)
 - secret feature
 

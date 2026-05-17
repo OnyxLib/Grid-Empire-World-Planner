@@ -323,10 +323,84 @@
         #originalRatioDisplay {
             color: #6b7280;
         }
+
+        /* --- Recently Used Tiles Panel --- */
+        #recentTilesPanel {
+            position: fixed;
+            top: 20px;
+            left: 230px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            z-index: 1050;
+            display: none;
+            flex-direction: column;
+            min-width: 100px;
+            max-width: 430px;
+            width: max-content;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            resize: horizontal;
+            overflow: hidden;
+        }
+
+        #recentTilesHeader {
+            background: #2d2d2d;
+            padding: 6px 10px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #9ca3af;
+            cursor: move;
+            user-select: none;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        #recentTilesContainer {
+            display: flex;
+            flex-direction: row;
+            gap: 5px;
+            padding: 6px;
+            overflow-x: auto;
+            width: 100%;
+            box-sizing: border-box;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        #recentTilesContainer::-webkit-scrollbar {
+            display: none;
+            width: 0;
+            height: 0;
+        }
+
+        .recent-tile-item {
+            width: 34px;
+            height: 34px;
+            object-fit: contain;
+            cursor: pointer;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            background: #111;
+            flex-shrink: 0;
+            transition: border-color 0.2s;
+        }
+
+        .recent-tile-item:hover {
+            border-color: var(--accent);
+        }
+
+        .recent-tile-item.selected {
+            border-color: var(--accent);
+        }
     </style>
 </head>
 
 <body>
+
+    <div id="recentTilesPanel">
+        <div id="recentTilesHeader">Recent Blocks</div>
+        <div id="recentTilesContainer"></div>
+    </div>
 
     <div id="loadingOverlay">
         <div class="loader-container">
@@ -375,6 +449,9 @@
                 <button id="btnBrush" class="active" onclick="setTool('brush')">Brush</button>
                 <button id="btnBucket" onclick="setTool('bucket')">Fill</button>
                 <button id="btnSelect" onclick="setTool('select')">Select</button>
+            </div>
+            <div class="trip-control-row">
+                <button id="btnReplace" onclick="setTool('replace')">Replace</button>
             </div>
 
 
@@ -462,6 +539,7 @@
         const btnBrush = document.getElementById('btnBrush');
         const btnBucket = document.getElementById('btnBucket');
         const btnSelect = document.getElementById('btnSelect');
+        const btnReplace = document.getElementById('btnReplace');
         const infoForm = document.getElementById('myForm');
         const headerTextEl = document.getElementById('headerText');
         const bodyTextEl = document.getElementById('bodyText');
@@ -497,6 +575,7 @@
         let mapData = { background: {}, foreground: {}, water: {} };
         let history = [], redoStack = [];
         let selectedTileData = null;
+        let recentTiles = [];
         let currentLayer = "foreground";
         let tool = 'brush';
 
@@ -508,6 +587,7 @@
         let currentMouseX = 0, currentMouseY = 0;
         let isInfoVisible = false;
         let bgImage = new Image();
+        let isInteractingWithPanel = false; // Flag to prevent canvas interactions during UI manipulation
 
         const imgCache = {}; // Global store for loaded Image objects
         const tileNameLookup = {}; // Maps data URLs to their readable names
@@ -534,6 +614,8 @@
         initApp();
         // Initialize Photo Controls on load
         initPhotoPreviewControls();
+        // Initialize Draggable History Panel
+        makeElementDraggable(document.getElementById('recentTilesPanel'), document.getElementById('recentTilesHeader'));
 
         async function initApp() {
             try {
@@ -629,7 +711,7 @@
                     await spriteImg.decode();
 
                     const tempCanvas = document.createElement('canvas');
-                    const tCtx = tempCanvas.getContext('2d');
+                    const tCtx = tempCanvas.createElement || tempCanvas.getContext('2d');
                     const frames = Object.entries(data.frames).sort((a, b) => a[1].index - b[1].index);
 
                     for (const [name, info] of frames) {
@@ -948,6 +1030,7 @@
             btnBrush.classList.toggle('active', t === 'brush');
             btnBucket.classList.toggle('active', t === 'bucket');
             btnSelect.classList.toggle('active', t === 'select');
+            btnReplace.classList.toggle('active', t === 'replace');
 
             if (t !== 'select') selectionRect = null;
             canvas.style.cursor = 'crosshair';
@@ -967,6 +1050,10 @@
             // Prevent infinite loops or redundant operations
             if (isErase && target === null) return;
             if (!isErase && target === selectedTileData) return;
+
+            if (!isErase && selectedTileData) {
+                addRecentTile(selectedTileData);
+            }
 
             const queue = [[startX, startY]];
             while (queue.length > 0) {
@@ -996,6 +1083,7 @@
                     if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
                         if (buttons === 1 && selectedTileData) {
                             mapData[layer][`${x},${y}`] = { src: selectedTileData, rotation, flipped };
+                            addRecentTile(selectedTileData);
                         } else if (buttons === 2) {
                             delete mapData[layer][`${x},${y}`];
                         }
@@ -1141,12 +1229,18 @@
 
         function selectTile(src, el) {
             document.querySelectorAll('.palette img, .palette .color-tile').forEach(i => i.classList.remove('selected'));
-            el.classList.add('selected');
+            if (!el) {
+                el = Array.from(document.querySelectorAll('.palette img, .palette .color-tile')).find(img => img.src === src);
+            }
+            if (el) el.classList.add('selected');
             selectedTileData = src;
             rotation = 0;
             flipped = false;
             rotationBtn.innerText = `Rot: 0°`;
             mirrorBtn.innerText = `Mirror: Off`;
+
+            // Append to dynamic layout tracker
+            addRecentTile(src);
         }
 
         function toggleGrid() { showGrid = !showGrid; gridParts = 0; draw(); }
@@ -1174,6 +1268,11 @@
          * 5. INPUT HANDLING
          ******************************************************************/
         function handleInput(e) {
+            /** * Guard clause: Prevent canvas interactions if the user is actively 
+             * dragging, resizing, or clicking the floating 'Recent Blocks' panel.
+             */
+            if (isInteractingWithPanel) return;
+
             const vRect = viewport.getBoundingClientRect();
             const centerX = vRect.width / 2, centerY = vRect.height / 2;
 
@@ -1224,6 +1323,8 @@
 
                     // Force brush tool for immediate use
                     setTool('brush');
+
+                    addRecentTile(tile.src);
                 }
                 return;
             }
@@ -1265,6 +1366,37 @@
                 } else if (e.buttons === 2) {
                     floodFill(mouseX, mouseY, true);
                 }
+            } else if (tool === 'replace') {
+                /**
+                 * Replace Tool operations:
+                 * Left Click (e.buttons === 1): Substitutes all instances of the clicked tile with the currently selected tile.
+                 * Right Click (e.buttons === 2): Deletes all instances of the clicked tile from the active layer.
+                 */
+                if (e.type === 'mousedown') {
+                    const targetTile = mapData[currentLayer][`${mouseX},${mouseY}`];
+
+                    if (targetTile) {
+                        const targetSrc = targetTile.src;
+                        const layer = mapData[currentLayer];
+
+                        if (e.buttons === 1 && selectedTileData && targetSrc !== selectedTileData) {
+                            // Left Click: Global substitution
+                            for (let coord in layer) {
+                                if (layer[coord].src === targetSrc) {
+                                    layer[coord] = { src: selectedTileData, rotation, flipped };
+                                }
+                            }
+                            addRecentTile(selectedTileData);
+                        } else if (e.buttons === 2) {
+                            // Right Click: Global deletion
+                            for (let coord in layer) {
+                                if (layer[coord].src === targetSrc) {
+                                    delete layer[coord];
+                                }
+                            }
+                        }
+                    }
+                }
             } else if (tool === 'brush' && !e.altKey) {
                 const dx = Math.abs(mouseX - lastX);
                 const dy = Math.abs(mouseY - lastY);
@@ -1290,6 +1422,7 @@
         }
 
         function handleMouseUp() {
+            isInteractingWithPanel = false; // Always release panel interaction lock on mouseup
             isSelecting = false; lastX = lastY = null; saveToCache();
         }
 
@@ -1297,6 +1430,11 @@
         canvas.addEventListener('mousemove', handleInput);
         window.addEventListener('mouseup', handleMouseUp);
         canvas.oncontextmenu = (e) => e.preventDefault();
+
+        /** Bind the mousedown event to the recent tiles panel to lock canvas interactions */
+        document.getElementById('recentTilesPanel').addEventListener('mousedown', () => {
+            isInteractingWithPanel = true;
+        });
 
         window.addEventListener('keydown', e => {
             if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
@@ -1639,7 +1777,7 @@
         }
 
         /**
-         * Analyzes all tiles currently in the palette.
+         * Automatically profiles all tiles currently loaded in the palette.
          * Filters out tiles that have transparency (holes) and calculates average RGB.
          */
         async function analyzePalette() {
@@ -1990,6 +2128,119 @@
                 "Version 2.1",
                 "Website by: Onyx"
             );
+        }
+
+
+        /******************************************************************
+         * 8. RECENTLY USED TILES MODULE
+         ******************************************************************/
+
+        /**
+         * Adds a tile's source data path to the tracking history pipeline.
+         * Enforces absolute uniqueness by shifting existing targets to the front.
+         * @param {string} src - The target asset's compiled source URL string.
+         */
+        function addRecentTile(src) {
+            if (!src) return;
+            const index = recentTiles.indexOf(src);
+            if (index > -1) {
+                recentTiles.splice(index, 1);
+            }
+            recentTiles.unshift(src);
+            if (recentTiles.length > 10) {
+                recentTiles.pop();
+            }
+            renderRecentTiles();
+        }
+
+        /**
+         * Destroys a specified node trace out of the modern history index.
+         * @param {string} src - The target asset's compiled source URL string.
+         */
+        function removeRecentTile(src) {
+            const index = recentTiles.indexOf(src);
+            if (index > -1) {
+                recentTiles.splice(index, 1);
+                renderRecentTiles();
+            }
+        }
+
+        /**
+         * Re-evaluates state and updates the floating element.
+         * Toggles container structural footprint properties if empty.
+         */
+        function renderRecentTiles() {
+            const panel = document.getElementById('recentTilesPanel');
+            const container = document.getElementById('recentTilesContainer');
+            if (!panel || !container) return;
+
+            if (recentTiles.length === 0) {
+                panel.style.display = 'none';
+                return;
+            }
+
+            panel.style.display = 'flex';
+            container.innerHTML = '';
+
+            recentTiles.forEach(src => {
+                const img = document.createElement('img');
+                img.src = src;
+                img.className = 'recent-tile-item';
+                img.title = tileNameLookup[src] || 'Recent Block';
+
+                if (selectedTileData === src) {
+                    img.classList.add('selected');
+                }
+
+                // Quick asset re-assignment handler
+                img.onclick = () => {
+                    selectTile(src, null);
+                };
+
+                // History removal pipeline access node
+                img.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    removeRecentTile(src);
+                };
+
+                container.appendChild(img);
+            });
+        }
+
+        /**
+         * Sets up programmatic drag-to-move capabilities using absolute cursor offsets.
+         * @param {HTMLElement} el - The underlying component wrapper container target.
+         * @param {HTMLElement} header - The dynamic moving anchor element handle.
+         */
+        function makeElementDraggable(el, header) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            header.onmousedown = dragMouseDown;
+
+            function dragMouseDown(e) {
+                e = e || window.event;
+                if (e.button !== 0) return; // Permit left-clicks only
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                el.style.top = (el.offsetTop - pos2) + "px";
+                el.style.left = (el.offsetLeft - pos1) + "px";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+            }
         }
 
     </script>
